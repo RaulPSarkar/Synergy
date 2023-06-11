@@ -1,15 +1,15 @@
 
 import pandas as pd
 import warnings
-from drug2smiles import drugToSMILES
+from drugToSmiles import drugToSMILES
 warnings.filterwarnings('ignore')
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
 
 
-pancreas = pd.read_csv('pancreas_anchor_combo.csv')
-colon = pd.read_csv('colon_anchor_combo.csv')
-breast = pd.read_csv('breast_anchor_combo.csv')
+pancreas = pd.read_csv('pancreas_anchor_combo.csv.gz')
+colon = pd.read_csv('colon_anchor_combo.csv.gz')
+breast = pd.read_csv('breast_anchor_combo.csv.gz')
 yes = pd.concat([pancreas,colon, breast], axis=0)
 #JOIN ALL DATASETS
 
