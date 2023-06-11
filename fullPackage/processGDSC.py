@@ -2,11 +2,14 @@
 import pandas as pd
 import warnings
 import sys
+import numpy as np
 sys.path.append("..")
 from src.drugToSmiles import drugToSMILES
+from src.mahalanobis import mahalanobisFunc
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
 from pathlib import Path
+
 
 ##########################
 ##########################
@@ -17,6 +20,7 @@ breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
 omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
+splitInto = 10 ##my code is bad, this is to lower RAM usage, leave as is
 ##########################
 ##########################
 
@@ -70,11 +74,21 @@ crispr.columns.name = 'CELLNAME'
 crisprT = crispr.T
 #crispr.T.to_csv('transcriptomicsT.csv')
 
-df = crisprT.merge(out2, on=['CELLNAME'])
 
-df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax']]
+#Otherwise there's not enough RAM
+splitOut = np.array_split(out2, splitInto)
+finalDF = []
+for outDF in splitOut:
+    print("here")
+    df = crisprT.merge(outDF, on=['CELLNAME'])
+    df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax']]
+    finalDF.append(df)
 
+
+df = pd.concat(finalDF, axis=0)
 df.drop_duplicates(inplace=True)
 
-df.to_csv(outputFile)
+dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
+
+dfSuperFinal.to_csv(outputFile)
 
