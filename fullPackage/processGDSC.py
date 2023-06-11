@@ -15,7 +15,7 @@ pancreasPath = Path(__file__).parent / "datasets/pancreas_anchor_combo.csv.gz"
 colonPath = Path(__file__).parent / "datasets/colon_anchor_combo.csv.gz"
 breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
-omicsData = Path(__file__).parent / "datasets/crispr.csv"
+omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
 ##########################
 ##########################
@@ -76,5 +76,5 @@ df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILE
 
 df.drop_duplicates(inplace=True)
 
-df.to_csv('datasetMultiExpressionBreast2.csv')
+df.to_csv(outputFile)
 
