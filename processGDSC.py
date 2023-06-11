@@ -1,11 +1,7 @@
 
 import pandas as pd
-import pubchempy
-import cirpy
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from chemspipy import ChemSpider
 import warnings
+from drug2smiles import drugToSMILES
 warnings.filterwarnings('ignore')
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
@@ -23,44 +19,7 @@ drugNames = yes.groupby(['Library Name'])['Synergy?'].count()
 
 
 
-def drugToSMILES(drugName, cached=False):
 
-    if(not cached):
-        cs = ChemSpider('ek03ZPZ3ITspWqMEWurgAQa4crlGhAJf')
-        drugSmile =cirpy.resolve(drugName, 'smiles')
-        try:
-            
-            m1 = Chem.MolFromSmiles(drugSmile)
-            return drugSmile
-            
-
-        except TypeError:
-            
-            #try:
-                
-                
-                results = pubchempy.get_compounds(drugName, 'name')
-                
-
-                
-                if(results):
-                    return results[0].isomeric_smiles
-                else:
-                    
-                    c2 = cs.search(drugName)
-
-
-                    if(c2):
-                        return c2[0].smiles
-                    else:
-                        return -1
-    else:
-        drug2smile = pd.read_csv('drug2smiles.txt', sep='\t')
-        try:
-            row = drug2smile.loc[drug2smile['name'] == drugName.strip()]
-            return row.iloc[0,2]
-        except:
-            return -1
 
 
 
