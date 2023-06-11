@@ -1,7 +1,7 @@
 
 import pandas as pd
 import warnings
-from drugToSmiles import drugToSMILES
+import scripts
 warnings.filterwarnings('ignore')
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
