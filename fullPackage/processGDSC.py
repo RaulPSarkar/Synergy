@@ -3,34 +3,41 @@ import pandas as pd
 import warnings
 import sys
 sys.path.append("..")
-from src.drugToSmiles import drugToSmiles
+from src.drugToSmiles import drugToSMILES
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
+from pathlib import Path
+
+##########################
+##########################
+#CHANGE PATHS AS NEEDED
+pancreasPath = Path(__file__).parent / "datasets/pancreas_anchor_combo.csv.gz"
+colonPath = Path(__file__).parent / "datasets/colon_anchor_combo.csv.gz"
+breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
+drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
+
+##########################
+##########################
 
 
-pancreas = pd.read_csv('pancreas_anchor_combo.csv.gz')
-colon = pd.read_csv('colon_anchor_combo.csv.gz')
-breast = pd.read_csv('breast_anchor_combo.csv.gz')
-yes = pd.concat([pancreas,colon, breast], axis=0)
+
+
+pancreas = pd.read_csv(pancreasPath)
+colon = pd.read_csv(colonPath)
+breast = pd.read_csv(breastPath)
+full = pd.concat([pancreas,colon, breast], axis=0)
 #JOIN ALL DATASETS
 
 
 
-drugNames = yes.groupby(['Library Name'])['Synergy?'].count()
+drugNames = full.groupby(['Library Name'])['Synergy?'].count()
 
 
-
-
-
-
-
-
-print(drugNames)
 
 smilesTable = pd.DataFrame(columns=['drug', 'SMILES_A'])
 
 for name in range(drugNames.shape[0]):
-    smiles = drugToSMILES( drugNames.index[name], True)
+    smiles = drugToSMILES( drugNames.index[name], True, drugCached)
     if(smiles==-1):
         print(drugNames.index[name])
     else:
@@ -38,7 +45,9 @@ for name in range(drugNames.shape[0]):
 
 ##CREATES A TABLE WITH ONLY THE DRUGS FOR WHICH SMILES ARE KNOWN (ALL BUT ONE IN THIS CASE)
 
-out = yes.merge(smilesTable, left_on='Library Name', right_on='drug')
+
+
+out = full.merge(smilesTable, left_on='Library Name', right_on='drug')
 smilesTable.columns = ['drug', 'SMILES_B']
 
 out2 = out.merge(smilesTable, left_on='Anchor Name', right_on='drug')

@@ -4,9 +4,12 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from chemspipy import ChemSpider
+from pathlib import Path
 
 
 def drugToSMILES(drugName, cached=False, cachedFile="drug2smiles.txt"):
+
+    
 
     if(not cached):
         cs = ChemSpider('ek03ZPZ3ITspWqMEWurgAQa4crlGhAJf')
