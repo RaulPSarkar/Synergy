@@ -5,3 +5,5 @@ A cached version of drug names to SMILES is present at drug2smiles.txt and is us
 
 pip install pubchempy
 pip install rdkit
+pip install cirpy
+pip install chemspipy
