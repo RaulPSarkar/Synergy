@@ -7,6 +7,7 @@ from chemspipy import ChemSpider
 from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+import numpy as np
 
 
 def drugToSMILES(drugName, cached=False, cachedFile="drug2smiles.txt"):
@@ -52,14 +53,18 @@ def drugToSMILES(drugName, cached=False, cachedFile="drug2smiles.txt"):
         
 
 def SMILEStoFingerprint(smilesTable, smilesColumnName='SMILES_A'):
-    #replace every row SMILES with 
-
-    fingerprints = pd.DataFrame()
+    #replace every row SMILES with ...
+    fingerprints = []
     for index, row in smilesTable.iterrows():
         bi = {}
-        fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(row[smilesColumnName], radius=2, bitInfo=bi, nBits=1024)
-        fp = pd.DataFrame(fp, index=index)
-        print(fp)
-        fingerprints = pd.concat(fingerprints, fp)
-    print(fingerprints)
-    return fingerprints
+        fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(row[smilesColumnName]) , radius=2, bitInfo=bi, nBits=1024)
+        fp = np.array(fp)
+        #print(fp)
+        fp = pd.DataFrame(data=[fp], index=[index] )
+        #print(fp)
+        fingerprints.append(fp)
+
+    final = pd.concat(fingerprints)
+    final["drug"] = smilesTable["drug"]
+    final[smilesColumnName] = smilesTable[smilesColumnName]
+    return final

@@ -20,6 +20,8 @@ breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
 omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
+outputInputFile = Path(__file__).parent / "datasets/fullInput.csv"
+outputSMILEStoFingerprints = Path(__file__).parent / "datasets/smiles2fingerprints.csv"
 splitInto = 10 ##my code is bad, this is to lower RAM usage, leave as is
 useCachedDrugs = True #keep as is, all drugs have been cached
 ##########################
@@ -30,14 +32,20 @@ useCachedDrugs = True #keep as is, all drugs have been cached
 
 def datasetToInput(data, omics, drugs):
 
-    #print(omics.T)
-
     print("Generating Input Dataset. This may take a while...")
     setWithOmics = data.merge(omics.T, left_on='CELLNAME', right_index=True)
-    print("Now merging with drugs...")
-    setWithDrugs = setWithOmics.merge(drugs, left_on='', right_index=True)
-    print(setWithDrugs)
-    return data
+    
+    
+    print("Now merging with drug A...")
+    setWithDrugA = setWithOmics.merge(drugs, on='SMILES_A')
+    print(setWithDrugA)
+    print("Now merging with drug B...")
+    fullSet = setWithDrugA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
+    print(fullSet)
+
+    #print("Now merging with drug B...")
+
+    return fullSet
 
 
 
@@ -65,7 +73,9 @@ for name in range(drugNames.shape[0]):
 ##CREATES A TABLE WITH ONLY THE DRUGS FOR WHICH SMILES ARE KNOWN (ALL BUT ONE IN THIS CASE)
 smilesTableBackup = smilesTable
 
-SMILEStoFingerprint(smilesTableBackup)
+fingerprintTable = SMILEStoFingerprint(smilesTableBackup)
+fingerprintTable.to_csv(outputSMILEStoFingerprints)
+
 
 out = full.merge(smilesTable, left_on='Library Name', right_on='drug')
 smilesTable.columns = ['drug', 'SMILES_B']
@@ -103,8 +113,13 @@ for outDF in splitOut:
 df = pd.concat(finalDF, axis=0)
 df.drop_duplicates(inplace=True)
 
+
+
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 
 dfSuperFinal.to_csv(outputFile)
 
-datasetToInput(dfSuperFinal, crispr, smilesTableBackup)
+#fullInput = datasetToInput(dfSuperFinal, crispr, fingerprintTable)
+#fullInput.to_csv(outputInputFile)
+
+
