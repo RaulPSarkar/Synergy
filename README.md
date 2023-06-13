@@ -14,3 +14,4 @@ pip install keras_tuner
 pip install tensorflow
 
 Using trainsklearn.py... a list of 978 landmark genes is being used
+Split into 80-10-10 - 10 for validation (hyperparameter tuning), 
