@@ -32,6 +32,7 @@ omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions/EN'
+tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 2
 kFold = 5
 ##########################
@@ -128,7 +129,7 @@ X = fullSet.loc[:,~fullSet.columns.str.startswith('SMILES')]
 X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis'], axis=1)
 
-y = fullSet['Delta Xmid', 'Delta Emax']
+y = fullSet[ 'Delta Xmid'] #, 'Delta Emax']
 
 
 
@@ -154,7 +155,7 @@ for train_index , test_index in kf.split(X):
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.mean_squared_error),
         cv=model_selection.KFold(5),
-        directory='/tuner',
+        directory= tunerDirectory,
         project_name=modelName)
 
     tuner.search(X_train, y_train)
