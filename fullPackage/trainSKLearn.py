@@ -4,7 +4,7 @@ import numpy as np
 sys.path.append("..")
 from pathlib import Path
 from sklearn.model_selection import KFold 
-
+import os
 import keras_tuner
 from sklearn import ensemble
 from sklearn import datasets
@@ -35,11 +35,11 @@ landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 1
+tunerRun = 0 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5
 ##########################
 ##########################
 
-#check models: i think it's not updated
 
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
@@ -113,7 +113,6 @@ def datasetToInput(data, omics, drugs):
     omicsFinal = omics.T[  interceptionGenes  ]
 
 
-    print(omicsFinal)
     print("Generating Input Dataset. This may take a while...")
     setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
     print("Now merging with drug A...")
@@ -138,7 +137,8 @@ X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid'
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 
 
-print(y)
+
+runString = 'run' + str(tunerRun)
 
 
 #cross validation
@@ -146,12 +146,16 @@ kf = KFold(n_splits=kFold)
 
 fullPredictions = []
 index = 0
+
+supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2' ] ]
+
 for train_index , test_index in kf.split(X):
+    suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
     X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
     y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
     
-
-
+    
+    fullTunerDirectory = tunerDirectory / modelName / runString
 
     tuner = keras_tuner.tuners.SklearnTuner(
         oracle=keras_tuner.oracles.BayesianOptimizationOracle(
@@ -160,26 +164,24 @@ for train_index , test_index in kf.split(X):
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.mean_squared_error),
         cv=model_selection.KFold(5),
-        directory= tunerDirectory,
-        project_name=modelName + '/' + str(index))
+        directory= fullTunerDirectory,
+        project_name=str(index) )
 
 
-    print('X:')
-    print(X_train)
-    print('y:')
-    print(y_train)
-
-    
     tuner.search(X_train, y_train.to_numpy())
     best_model = tuner.get_best_models(num_models=1)[0]
 
+    #tuner.get_best_hyperparameters()
 
     ypred = best_model.predict(X_test)
 
+    
 
-    df = pd.DataFrame(data={#'experiment': test_dataset.get_row_ids(sep='+'),
-                            'Tissue': fullSet['Tissue'],
-                            'Conc': fullSet['Anchor Conc'],
+    df = pd.DataFrame(data={'Cellname': suppTest['CELLNAME'],
+                            'Library': suppTest['NSC1'],
+                            'Anchor': suppTest['NSC2'],
+                            'Tissue': suppTest['Tissue'],
+                            'Conc': suppTest['Anchor Conc'],
                             'y_trueIC': y_test.iloc[:,0],
                             'y_trueEmax': y_test.iloc[:,1],
                             'y_predIC': ypred[:,0],
@@ -187,14 +189,19 @@ for train_index , test_index in kf.split(X):
 
 
     saveTo = modelName + str(index) + '.csv'
-    df.to_csv(outputPredictions / saveTo, index=False)
+    df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
     index+=1
     fullPredictions.append(df)
 
 
 totalPreds = pd.concat(fullPredictions, axis=0)
-finalName = modelName + '.csv'
-df.to_csv(outputPredictions / 'final' / finalName, index=False)
+finalName = modelName + runString + '.csv'
+outdir = outputPredictions / 'final' / modelName
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
+
+
+totalPreds.to_csv(outdir / finalName, index=False)
 
 
 #leave one out validation
