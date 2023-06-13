@@ -9,8 +9,8 @@ pip install rdkit
 pip install cirpy
 pip install chemspipy
 pip install mahalanobis
-
-
-
+pip install lightgbm
+pip install keras_tuner
+pip install tensorflow
 
 Using trainsklearn.py... a list of 978 landmark genes is being used
