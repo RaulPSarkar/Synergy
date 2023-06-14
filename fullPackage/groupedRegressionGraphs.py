@@ -16,6 +16,7 @@ import os
 predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv']#, 'predictions/MultiNoConc/predictionsExpressionRF.csv', 'predictions/MultiNoConc/predictionsMultiExpressionEN.csv', 'predictions/MultiNoConc/predictionsMultiExpressionLGBM.csv', 'predictions/MultiNoConc/predictionsMultiExpressionXGB.csv']
 predictionNames = ['EN', 'LGBM']#'Baseline','DL', 'RF', 'EN', 'LGBM', 'XGBoost']
 graphsFolder =  Path(__file__).parent / 'graphs' / 'groupedRegression'
+topXGraphs = 3 #How many top x best/worst library drug graphs to generate
 ##########################
 ##########################
 
