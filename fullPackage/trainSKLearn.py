@@ -27,14 +27,14 @@ from sklearn.model_selection import train_test_split
 ##########################
 ##########################
 #Change
-modelName = 'lgbm' #en, rf, lgbm, svr, xgboost
+modelName = 'xgboost' #en, rf, lgbm, svr, xgboost
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 1
+tunerTrials = 10
 tunerRun = 0 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5
 ##########################
