@@ -140,7 +140,7 @@ def regressionGraphs(df, modelName, dfStats, saveGraphsFolder):
     slope, intercept, r, p, sterr = scipy.stats.linregress(x=plot.get_lines()[0].get_xdata(),
                                                        y=plot.get_lines()[0].get_ydata())
 
-    plot.axes.axline((0, 0), (0.1, 0.1), linewidth=4, ls="--", c=".3", color='r')
+    plot.axes.axline((0, 0), (0.01, 0.01), linewidth=4, ls="--", c=".3", color='r')
     plt.axhline(y=0, linewidth=2, c=".3", linestyle='-')
 
     plt.xlabel('True ΔIC50')
@@ -169,7 +169,7 @@ def regressionGraphs(df, modelName, dfStats, saveGraphsFolder):
     matplotlib.rc('axes', titlesize=25)
     plot = sns.regplot(data=df, x="y_trueEmax", y="y_predEmax", scatter_kws={"color": "grey"}, line_kws={"color": "orange"})#, hue="Tissue")
 
-    plot.axes.axline((0, 0), (0.1, 0.1), linewidth=4, ls="--", c=".3", color='r')
+    plot.axes.axline((0, 0), (0.01, 0.01), linewidth=4, ls="--", c=".3", color='r')
     plt.axhline(y=0, linewidth=2, c=".3", linestyle='-')
 
     plt.xlabel('True ΔEmax')

@@ -27,16 +27,16 @@ from sklearn.model_selection import train_test_split
 ##########################
 ##########################
 #Change
-modelName = 'rf' #en, rf, lgbm, svr, xgboost
+modelName = 'en' #en, rf, lgbm, svr, xgboost
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 20
+tunerTrials = 100 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 0 #increase if you want to start the hyperparameter optimization process anew
-kFold = 5
+kFold = 5 #number of folds to use for cross-validation
 useBaselineInstead = False #change to true to use baseline instead of the model from modelName
 ##########################
 ##########################
@@ -154,7 +154,6 @@ yVal = validationData[ ['Delta Xmid', 'Delta Emax' ] ]
 
 
 #hyperparam tuning
-
 runString = 'run' + str(tunerRun)
 
 if(not useBaselineInstead):
@@ -241,6 +240,3 @@ if not os.path.exists(outdir):
 
 
 totalPreds.to_csv(outdir / finalName, index=False)
-
-
-#leave one out validation

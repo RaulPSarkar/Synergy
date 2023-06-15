@@ -10,8 +10,8 @@ from src.graphFunctions import regressionGraphs, barplot
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DL.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv']#, 'predictions/MultiNoConc/predictionsExpressionRF.csv', 'predictions/MultiNoConc/predictionsMultiExpressionEN.csv', 'predictions/MultiNoConc/predictionsMultiExpressionLGBM.csv', 'predictions/MultiNoConc/predictionsMultiExpressionXGB.csv']
-predictionNames = ['Baseline', 'EN', 'DL', 'LGBM']#'Baseline','DL', 'RF', 'EN', 'LGBM', 'XGBoost']
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DL.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
+predictionNames = ['Baseline', 'EN', 'DL', 'LGBM', 'RF', 'XGBoost', 'SVR']
 saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
 modelStatsFolder =  Path(__file__).parent / 'results'
 ##########################
@@ -30,9 +30,9 @@ fullStatsDF = []
 
 for j in predictionPaths:
 
-    print(j)
     pred = pd.read_csv(j)
     pred = pred.dropna(subset=['y_trueIC','y_predIC','y_trueEmax','y_predEmax'])
+    #NAs dropped (they shouldn't exist) just in case the baseline has never seen the test drug pair
 
     modelName = predictionNames[counter]
     counter += 1

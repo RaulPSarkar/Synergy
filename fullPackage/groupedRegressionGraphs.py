@@ -13,8 +13,8 @@ import os
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv']#, 'predictions/MultiNoConc/predictionsExpressionRF.csv', 'predictions/MultiNoConc/predictionsMultiExpressionEN.csv', 'predictions/MultiNoConc/predictionsMultiExpressionLGBM.csv', 'predictions/MultiNoConc/predictionsMultiExpressionXGB.csv']
-predictionNames = ['EN', 'LGBM']#'Baseline','DL', 'RF', 'EN', 'LGBM', 'XGBoost']
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
+predictionNames = ['Baseline', 'EN', 'LGBM', 'XGBoost', 'SVR']
 graphsFolder =  Path(__file__).parent / 'graphs' / 'groupedRegression'
 topXGraphs = 3 #How many top x best/worst library drug graphs to generate
 ##########################
@@ -85,7 +85,7 @@ for j in predictionPaths:
             slope, intercept, r, p, sterr = scipy.stats.linregress(x=plot.get_lines()[0].get_xdata(),
                                                             y=plot.get_lines()[0].get_ydata())
             
-            plot.axes.axline((0, 0), (1, 1), linewidth=4, ls="--", c=".3", color='r')
+            plot.axes.axline((0, 0), (0.01, 0.01), linewidth=4, ls="--", c=".3", color='r')
             plt.axhline(y=0, linewidth=2, c=".3", linestyle='-')
             plt.axvline(x=0, linewidth=1, c=".3", linestyle='-')
             plt.xlabel('True ΔIC50', size=36)
@@ -108,7 +108,7 @@ for j in predictionPaths:
             slope, intercept, r, p, sterr = scipy.stats.linregress(x=plot.get_lines()[0].get_xdata(),
                                                             y=plot.get_lines()[0].get_ydata())
             
-            plot.axes.axline((0, 0), (1, 1), linewidth=4, ls="--", c=".3", color='r')
+            plot.axes.axline((0, 0), (0.01, 0.01), linewidth=4, ls="--", c=".3", color='r')
             plt.axhline(y=0, linewidth=2, c=".3", linestyle='-')
             plt.axvline(x=0, linewidth=1, c=".3", linestyle='-')
             plt.xlabel('True ΔEmax', size=36)
@@ -150,3 +150,5 @@ axEmax.tick_params(axis='y', labelsize=36)
 figure = plt.gcf()
 figure.set_size_inches(32, 18)
 plt.savefig(graphsFolder / 'Emax' / 'boxplot.png')
+
+print("All graphs saved!")
