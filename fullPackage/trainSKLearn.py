@@ -34,13 +34,16 @@ fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 10
+tunerTrials = 22
 tunerRun = 0 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5
+useBaselineInstead = False #change to true to use baseline instead of the model from modelName
 ##########################
 ##########################
 
 
+if(useBaselineInstead):
+    modelName = 'baseline'
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
 fingerprints = pd.read_csv(fingerprints)
@@ -153,21 +156,24 @@ yVal = validationData[ ['Delta Xmid', 'Delta Emax' ] ]
 #hyperparam tuning
 
 runString = 'run' + str(tunerRun)
-fullTunerDirectory = tunerDirectory / modelName
 
-tuner = keras_tuner.tuners.SklearnTuner(
-    oracle=keras_tuner.oracles.BayesianOptimizationOracle(
-        objective=keras_tuner.Objective('score', 'min'),
-        max_trials=tunerTrials),
-    hypermodel=build_model,
-    scoring=metrics.make_scorer(metrics.mean_squared_error),
-    cv=model_selection.KFold(5),
-    directory= fullTunerDirectory,
-    project_name=runString )
+if(not useBaselineInstead):
+    
+    fullTunerDirectory = tunerDirectory / modelName
+
+    tuner = keras_tuner.tuners.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
+            objective=keras_tuner.Objective('score', 'min'),
+            max_trials=tunerTrials),
+        hypermodel=build_model,
+        scoring=metrics.make_scorer(metrics.mean_squared_error),
+        cv=model_selection.KFold(5),
+        directory= fullTunerDirectory,
+        project_name=runString )
 
 
-tuner.search(Xval, yVal.to_numpy())
-best_hp = tuner.get_best_hyperparameters()[0]
+    tuner.search(Xval, yVal.to_numpy())
+    best_hp = tuner.get_best_hyperparameters()[0]
 
 
 
@@ -186,22 +192,39 @@ for train_index , test_index in kf.split(X):
     y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
     
     
+    if(not useBaselineInstead):
+        model = build_model(best_hp)
+        model.fit(X_train, y_train)
+        ypred = model.predict(X_test)
+        df = pd.DataFrame(data={'Cellname': suppTest['CELLNAME'],
+                        'Library': suppTest['NSC1'],
+                        'Anchor': suppTest['NSC2'],
+                        'Tissue': suppTest['Tissue'],
+                        'Conc': suppTest['Anchor Conc'],
+                        'y_trueIC': y_test.iloc[:,0],
+                        'y_trueEmax': y_test.iloc[:,1],
+                        'y_predIC': ypred[:,0],
+                        'y_predEmax': ypred[:,1]})
 
-    model = build_model(best_hp)
-    model.fit(X_train, y_train)
-    ypred = model.predict(X_test)
+    else:
+        dataTrain = data.iloc[train_index,:]
+        dataTest = data.iloc[test_index,:]
+        meanScores = dataTrain.groupby(['NSC1', 'NSC2'])['Delta Xmid', 'Delta Emax'].mean()
 
-    
+        predictedTest = dataTest.merge(meanScores, on=['NSC1', 'NSC2'])
 
-    df = pd.DataFrame(data={'Cellname': suppTest['CELLNAME'],
-                            'Library': suppTest['NSC1'],
-                            'Anchor': suppTest['NSC2'],
-                            'Tissue': suppTest['Tissue'],
-                            'Conc': suppTest['Anchor Conc'],
-                            'y_trueIC': y_test.iloc[:,0],
-                            'y_trueEmax': y_test.iloc[:,1],
-                            'y_predIC': ypred[:,0],
-                            'y_predEmax': ypred[:,1]})
+        df = pd.DataFrame(data={
+                            'Cellname': predictedTest['CELLNAME'],
+                            'Library': predictedTest['NSC1'],
+                            'Anchor': predictedTest['NSC2'],
+                            'Tissue': predictedTest['Tissue'],
+                            'Conc': predictedTest['Anchor Conc'],
+                            'y_trueIC': predictedTest['Delta Xmid_x'],
+                            'y_predIC': predictedTest['Delta Xmid_y'],
+                            'y_trueEmax': predictedTest['Delta Emax_x'],
+                            'y_predEmax': predictedTest['Delta Emax_y']
+
+                            })
 
 
     saveTo = modelName + str(index) + '.csv'

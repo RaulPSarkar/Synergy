@@ -94,17 +94,14 @@ for j in predictionPaths:
             ax = plt.gca()
             ax.tick_params(axis='x', labelsize=40)
             ax.tick_params(axis='y', labelsize=40)
-            figure = plt.gcf()  # get current figure
-            figure.set_size_inches(32, 18) # set figure's size manually to your full screen (32x18)
+
+            #to save in fullscreen
+            figure = plt.gcf()
+            figure.set_size_inches(32, 18)
 
             fileName = modelName + pos + 'regression' + str(i) + '.png'
             plt.savefig(graphsFolder / 'IC50' / fileName)
             plt.close()
-
-
-
-
-
 
             selectedDF = df.loc[df['Library'] == topLibraryEmax.index[index] ]
             plot = sns.regplot(data=selectedDF, x="y_trueEmax", y="y_predEmax", scatter_kws={"color": "grey"}, line_kws={"color": "orange"})

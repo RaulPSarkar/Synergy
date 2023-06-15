@@ -12,6 +12,8 @@ pip install mahalanobis
 pip install lightgbm
 pip install keras_tuner
 pip install tensorflow
+pip install os
+pip install pathlib
 
 Using trainsklearn.py... a list of 978 landmark genes is being used
 Split into 80-10-10 - 10 for validation (hyperparameter tuning), 

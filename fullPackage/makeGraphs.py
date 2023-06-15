@@ -1,25 +1,18 @@
 import pandas as pd
-import seaborn as sns
-import matplotlib
-from sklearn.linear_model import LogisticRegression
-from sklearn import metrics
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import r2_score, mean_squared_error
 from pathlib import Path
 import os
+from src.graphFunctions import regressionGraphs, barplot
 
 
 
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv']#, 'predictions/MultiNoConc/predictionsExpressionRF.csv', 'predictions/MultiNoConc/predictionsMultiExpressionEN.csv', 'predictions/MultiNoConc/predictionsMultiExpressionLGBM.csv', 'predictions/MultiNoConc/predictionsMultiExpressionXGB.csv']
-predictionNames = ['EN', 'LGBM']#'Baseline','DL', 'RF', 'EN', 'LGBM', 'XGBoost']
-graphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DL.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv']#, 'predictions/MultiNoConc/predictionsExpressionRF.csv', 'predictions/MultiNoConc/predictionsMultiExpressionEN.csv', 'predictions/MultiNoConc/predictionsMultiExpressionLGBM.csv', 'predictions/MultiNoConc/predictionsMultiExpressionXGB.csv']
+predictionNames = ['Baseline', 'EN', 'DL', 'LGBM']#'Baseline','DL', 'RF', 'EN', 'LGBM', 'XGBoost']
+saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
 modelStatsFolder =  Path(__file__).parent / 'results'
 ##########################
 ##########################
@@ -28,19 +21,23 @@ modelStatsFolder =  Path(__file__).parent / 'results'
 
 
 
-
+##############################################
+####CREATE MODEL STATISTICS FILE
+##############################################
 counter = 0
 
 fullStatsDF = [] 
 
 for j in predictionPaths:
 
-    df = pd.read_csv(j)
+    print(j)
+    pred = pd.read_csv(j)
+    pred = pred.dropna(subset=['y_trueIC','y_predIC','y_trueEmax','y_predEmax'])
+
     modelName = predictionNames[counter]
     counter += 1
 
 
-    pred = pd.read_csv(Path(__file__).parent / 'predictions/final/lgbm/lgbmrun0.csv')
 
     rhoEmax, p = spearmanr(pred['y_trueEmax'], pred['y_predEmax'])
     rhoIC50, p = spearmanr(pred['y_trueIC'], pred['y_predIC'])
@@ -67,3 +64,23 @@ fullStatsDF.to_csv(modelStatsFolder / 'results.csv', index=False)
 print(fullStatsDF)
 
 
+##############################################
+####GENERATE SCATTER GRAPHS AND BAR PLOTS
+##############################################
+roundedOld = fullStatsDF.round(4)
+fullStatsDF = fullStatsDF.set_index('name')
+rounded = fullStatsDF.round(4)
+
+counter = 0
+
+for j in predictionPaths:
+
+    df = pd.read_csv(j)
+    modelName = predictionNames[counter]
+    regressionGraphs(df, modelName, rounded, saveGraphsFolder)
+
+    counter += 1
+
+barplot(roundedOld, saveGraphsFolder,'gdsc')
+
+print("Graphs written to disk!")

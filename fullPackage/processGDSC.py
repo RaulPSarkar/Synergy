@@ -104,7 +104,7 @@ crisprT = crispr.T
 splitOut = np.array_split(out2, splitInto)
 finalDF = []
 for outDF in splitOut:
-    print("here")
+    print("+1")
     df = crisprT.merge(outDF, on=['CELLNAME'])
     df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax']]
     finalDF.append(df)
@@ -116,6 +116,9 @@ df.drop_duplicates(inplace=True)
 
 
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
+
+#shuffle (because it's not shuffled, which is BAD)
+dfSuperFinal = dfSuperFinal.sample(frac=1)
 
 dfSuperFinal.to_csv(outputFile)
 
