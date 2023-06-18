@@ -34,13 +34,16 @@ fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 0 #increase if you want to start the hyperparameter optimization process anew
+tunerTrials = 2 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 useBaselineInstead = False #change to true to use baseline instead of the model from modelName
 ##########################
 ##########################
 
+
+#THE TUNER IS ALREADY USING CV AUTOMATICALLY, SO I ONLY HAD TO DO ONE TRAIN-TEST SPLIT
+#(FOR NESTED CV)
 
 if(useBaselineInstead):
     modelName = 'baseline'
@@ -130,50 +133,21 @@ def datasetToInput(data, omics, drugs):
 
 fullSet = datasetToInput(data,omics, fingerprints)
 
-remainingData, validationData = train_test_split(fullSet, test_size=0.1, shuffle=True)
-
 #supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
-supp = remainingData[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
+supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
 
 #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
-X = remainingData.loc[:,~remainingData.columns.str.startswith('SMILES')]
+X = fullSet.loc[:,~fullSet.columns.str.startswith('SMILES')]
 X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
-y = remainingData[ ['Delta Xmid', 'Delta Emax' ] ]
-
-
-
-#create validation X and y
-Xval = validationData.loc[:,~validationData.columns.str.startswith('SMILES')]
-Xval = Xval.loc[:,~Xval.columns.str.startswith('drug')]
-Xval = Xval.loc[:,~Xval.columns.str.startswith('Unnamed')]
-Xval = Xval.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
-
-yVal = validationData[ ['Delta Xmid', 'Delta Emax' ] ]
+y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 
 
 #hyperparam tuning
 runString = 'run' + str(tunerRun)
 
-if(not useBaselineInstead):
-    
-    fullTunerDirectory = tunerDirectory / modelName
-
-    tuner = keras_tuner.tuners.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
-            objective=keras_tuner.Objective('score', 'min'),
-            max_trials=tunerTrials),
-        hypermodel=build_model,
-        scoring=metrics.make_scorer(metrics.mean_squared_error),
-        cv=model_selection.KFold(5),
-        directory= fullTunerDirectory,
-        project_name=runString )
-
-
-    tuner.search(Xval, yVal.to_numpy())
-    best_hp = tuner.get_best_hyperparameters()[0]
 
 
 
@@ -191,6 +165,28 @@ for train_index , test_index in kf.split(X):
     X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
     y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
     
+
+    if(not useBaselineInstead):
+    
+        fullTunerDirectory = tunerDirectory / modelName
+
+        runStringCV = runString + 'fold' + index
+
+        tuner = keras_tuner.tuners.SklearnTuner(
+            oracle=keras_tuner.oracles.BayesianOptimizationOracle(
+                objective=keras_tuner.Objective('score', 'min'),
+                max_trials=tunerTrials),
+            hypermodel=build_model,
+            scoring=metrics.make_scorer(metrics.mean_squared_error),
+            cv=model_selection.KFold(5),
+            directory= fullTunerDirectory,
+            project_name= runStringCV)
+
+
+        tuner.search(X, y.to_numpy())
+        best_hp = tuner.get_best_models()[0]
+        #no need to grab best HPs anymore because it's already fitted to training dataset
+
     
     if(not useBaselineInstead):
         model = build_model(best_hp)
