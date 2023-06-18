@@ -12,13 +12,13 @@ from pathlib import Path
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun1.csv']#, Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', ]
 almanac = False
 ##########################
 ##########################
 
 
-#ID is: Cell line, drug A, drug B (or just make ID var)
+#ID is Experiment column
 
 
 if(not almanac):

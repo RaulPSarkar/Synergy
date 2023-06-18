@@ -170,7 +170,7 @@ for train_index , test_index in kf.split(X):
     
         fullTunerDirectory = tunerDirectory / modelName
 
-        runStringCV = runString + 'fold' + index
+        runStringCV = runString + 'fold' + str(index)
 
         tuner = keras_tuner.tuners.SklearnTuner(
             oracle=keras_tuner.oracles.BayesianOptimizationOracle(
@@ -184,8 +184,9 @@ for train_index , test_index in kf.split(X):
 
 
         tuner.search(X, y.to_numpy())
-        best_hp = tuner.get_best_models()[0]
-        #no need to grab best HPs anymore because it's already fitted to training dataset
+        best_hp = tuner.get_best_hyperparameters()[0]
+        #technically, no need to grab best HPs anymore because it's already fitted to training dataset
+        #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
 
     
     if(not useBaselineInstead):
