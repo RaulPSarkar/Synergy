@@ -118,7 +118,11 @@ df.drop_duplicates(inplace=True)
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 
 #shuffle (because it's not shuffled, which is BAD)
-dfSuperFinal = dfSuperFinal.sample(frac=1)
+
+dfSuperFinal['Experiment'] = dfSuperFinal.index
+
+#dfSuperFinal = dfSuperFinal.sample(frac=1)
+
 
 dfSuperFinal.to_csv(outputFile)
 

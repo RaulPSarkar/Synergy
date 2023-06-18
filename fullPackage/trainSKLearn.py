@@ -132,13 +132,14 @@ fullSet = datasetToInput(data,omics, fingerprints)
 
 remainingData, validationData = train_test_split(fullSet, test_size=0.1, shuffle=True)
 
-supp = remainingData[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2' ] ]
+#supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
+supp = remainingData[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
 
 #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
 X = remainingData.loc[:,~remainingData.columns.str.startswith('SMILES')]
 X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
-X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis'], axis=1)
+X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
 y = remainingData[ ['Delta Xmid', 'Delta Emax' ] ]
 
@@ -148,7 +149,7 @@ y = remainingData[ ['Delta Xmid', 'Delta Emax' ] ]
 Xval = validationData.loc[:,~validationData.columns.str.startswith('SMILES')]
 Xval = Xval.loc[:,~Xval.columns.str.startswith('drug')]
 Xval = Xval.loc[:,~Xval.columns.str.startswith('Unnamed')]
-Xval = Xval.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis'], axis=1)
+Xval = Xval.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
 yVal = validationData[ ['Delta Xmid', 'Delta Emax' ] ]
 
@@ -178,7 +179,7 @@ if(not useBaselineInstead):
 
 
 #cross validation
-kf = KFold(n_splits=kFold)
+kf = KFold(n_splits=kFold, shuffle=True)
 
 fullPredictions = []
 index = 0
@@ -195,7 +196,8 @@ for train_index , test_index in kf.split(X):
         model = build_model(best_hp)
         model.fit(X_train, y_train)
         ypred = model.predict(X_test)
-        df = pd.DataFrame(data={'Cellname': suppTest['CELLNAME'],
+        df = pd.DataFrame(data={'Experiment': suppTest['Experiment'],
+                        'Cellname': suppTest['CELLNAME'],
                         'Library': suppTest['NSC1'],
                         'Anchor': suppTest['NSC2'],
                         'Tissue': suppTest['Tissue'],
@@ -213,6 +215,7 @@ for train_index , test_index in kf.split(X):
         predictedTest = dataTest.merge(meanScores, on=['NSC1', 'NSC2'])
 
         df = pd.DataFrame(data={
+                            'Experiment': predictedTest['Experiment'],
                             'Cellname': predictedTest['CELLNAME'],
                             'Library': predictedTest['NSC1'],
                             'Anchor': predictedTest['NSC2'],
