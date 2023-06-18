@@ -12,7 +12,7 @@ from pathlib import Path
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DL.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
 almanac = False
 ##########################
 ##########################
@@ -24,8 +24,18 @@ almanac = False
 if(not almanac):
 
 
-    for path in predictionPaths():
-        pass
+    predictionsDFList = []
+    predictionsDF = pd.DataFrame()
+
+    for path in predictionPaths:
+        df = pd.read_csv(path)
+        df.sort_values(by='Experiment', ascending=True, inplace=True)
+        df.reset_index(inplace=True)
+        print(df)
+        predictionsDFList.append(df)
+        predictionsDF = predictionsDF.add(df[['Experiment', 'y_trueIC', 'y_trueEmax','y_predIC', 'y_predEmax']], fill_value=0)
+
+    print(predictionsDF)
 
     rf = pd.read_csv('predictions/MultiNoConc/predictionsExpressionRF.csv')
     svr = pd.read_csv('predictions/MultiNoConc/predictionsMultiExpressionSVR.csv')
