@@ -20,6 +20,7 @@ from sklearn.svm import LinearSVR
 from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
+import argparse
 
 
 
@@ -41,6 +42,25 @@ useBaselineInstead = False #change to true to use baseline instead of the model 
 saveTopXHyperparametersPerFold = 3
 ##########################
 ##########################
+
+
+parser = argparse.ArgumentParser(description="Training synergy prediction models with sklearn models")
+
+parser.add_argument(
+    "-m",
+    "--model",
+    default=modelName,
+    help="Name of the model to train: en, rf, lgbm, svr, xgboost",
+)
+
+args = parser.parse_args()
+print(args.model)
+
+
+
+
+
+
 
 
 #THE TUNER IS ALREADY USING CV AUTOMATICALLY, SO I ONLY HAD TO DO ONE TRAIN-TEST SPLIT
