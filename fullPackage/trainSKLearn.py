@@ -34,10 +34,11 @@ fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 2 #how many trials the tuner will do for hyperparameter optimization
+tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 useBaselineInstead = False #change to true to use baseline instead of the model from modelName
+saveTopXHyperparametersPerFold = 3
 ##########################
 ##########################
 
@@ -158,7 +159,7 @@ kf = KFold(n_splits=kFold, shuffle=True)
 fullPredictions = []
 index = 0
 
-
+superFinalHyperDF = []
 
 for train_index , test_index in kf.split(X):
     suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
@@ -188,8 +189,21 @@ for train_index , test_index in kf.split(X):
         #technically, no need to grab best HPs anymore because it's already fitted to training dataset
         #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
 
-        print("best values:")
-        print(best_hp.values)
+        print("Best " + str(saveTopXHyperparametersPerFold) + " HP values:")
+
+        hyperList = []
+
+        for hyper in range (saveTopXHyperparametersPerFold):
+            best_hpIter = tuner.get_best_hyperparameters(saveTopXHyperparametersPerFold)[hyper]
+            bestValsDict = best_hpIter.values
+            bestValsDict = {k:[v] for k,v in bestValsDict.items()} #taken from https://stackoverflow.com/questions/57631895/dictionary-to-dataframe-error-if-using-all-scalar-values-you-must-pass-an-ind
+            bestHyperDF = pd.DataFrame.from_dict(bestValsDict)
+            bestHyperDF['fold'] = index+1
+            hyperList.append(bestHyperDF)
+        
+        finalHyperDF = pd.concat(hyperList, axis=0)
+        print(finalHyperDF)
+        superFinalHyperDF.append(finalHyperDF)
 
     
     if(not useBaselineInstead):
@@ -237,9 +251,15 @@ for train_index , test_index in kf.split(X):
 
 totalPreds = pd.concat(fullPredictions, axis=0)
 finalName = modelName + runString + '.csv'
+finalHPName = modelName + runString + 'hyperParams.csv'
+
 outdir = outputPredictions / 'final' / modelName
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
 
+
 totalPreds.to_csv(outdir / finalName, index=False)
+superFinalHyperDF = pd.concat(superFinalHyperDF, axis=0)
+print(superFinalHyperDF)
+superFinalHyperDF.to_csv(outdir / finalHPName, index=False)
