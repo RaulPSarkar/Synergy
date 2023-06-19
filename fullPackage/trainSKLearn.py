@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 ##########################
 ##########################
 #Change
-modelName = 'svr' #en, rf, lgbm, svr, xgboost
+modelName = 'rf' #en, rf, lgbm, svr, xgboost
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -189,7 +189,6 @@ for train_index , test_index in kf.split(X):
         #technically, no need to grab best HPs anymore because it's already fitted to training dataset
         #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
 
-        print("Best " + str(saveTopXHyperparametersPerFold) + " HP values:")
 
         hyperList = []
 
@@ -199,10 +198,10 @@ for train_index , test_index in kf.split(X):
             bestValsDict = {k:[v] for k,v in bestValsDict.items()} #taken from https://stackoverflow.com/questions/57631895/dictionary-to-dataframe-error-if-using-all-scalar-values-you-must-pass-an-ind
             bestHyperDF = pd.DataFrame.from_dict(bestValsDict)
             bestHyperDF['fold'] = index+1
+            bestHyperDF['rank'] = hyper+1
             hyperList.append(bestHyperDF)
         
         finalHyperDF = pd.concat(hyperList, axis=0)
-        print(finalHyperDF)
         superFinalHyperDF.append(finalHyperDF)
 
     
@@ -261,5 +260,7 @@ if not os.path.exists(outdir):
 
 totalPreds.to_csv(outdir / finalName, index=False)
 superFinalHyperDF = pd.concat(superFinalHyperDF, axis=0)
-print(superFinalHyperDF)
 superFinalHyperDF.to_csv(outdir / finalHPName, index=False)
+
+print("Best HP values:")
+print(superFinalHyperDF)
