@@ -188,6 +188,9 @@ for train_index , test_index in kf.split(X):
         #technically, no need to grab best HPs anymore because it's already fitted to training dataset
         #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
 
+        print("best values:")
+        print(best_hp.values)
+
     
     if(not useBaselineInstead):
         model = build_model(best_hp)
