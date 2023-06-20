@@ -80,9 +80,10 @@ def build_model(hp):
     use = modelName
     if(use=='rf'):
         model = ensemble.RandomForestRegressor(
-            n_estimators=hp.Int('n_estimators', 10, 150, step=2),
-            criterion='absolute_error',
-            max_depth=hp.Int('max_depth', 3, 30),
+            n_estimators=hp.Int('n_estimators', 10, 250),
+            max_depth=hp.Int('max_depth', 3, 35),
+            max_features=3,
+            min_samples_split=4,
             bootstrap=hp.Boolean('bootstrap', True, False),
             #criterion=hp.Choice('criterion', ['gini','entropy']),
             n_jobs=-1
@@ -95,8 +96,8 @@ def build_model(hp):
         ) )
     elif(use=='svr'):
         model = MultiOutputRegressor ( LinearSVR(
-            C = hp.Float('C', 1e-3, 1e3, step=8, sampling="log"), #1e-3
-            epsilon = hp.Float('epsilon', 1e-4, 1e1, step=6, sampling="log"),
+            C = hp.Float('C', 1e-3, 1e3, sampling="log"), #1e-3
+            epsilon = hp.Float('epsilon', 1e-4, 1e1, sampling="log"),
             dual=False,
             loss='squared_epsilon_insensitive',
             max_iter=100000
