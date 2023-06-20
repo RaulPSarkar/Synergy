@@ -28,7 +28,7 @@ import argparse
 ##########################
 ##########################
 #Change
-modelName = 'rf' #en, rf, lgbm, svr, xgboost
+modelName = 'en' #en, rf, lgbm, svr, xgboost
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -54,7 +54,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-print(args.model)
+print("Model selected: " + args.model)
 
 
 
@@ -90,7 +90,7 @@ def build_model(hp):
         )
     elif(use=='en'):
         model = MultiOutputRegressor ( ElasticNet(
-            alpha=hp.Float('alpha', 1e-3,1e3,  sampling="log"),
+            alpha=hp.Float('alpha', 1e-2,1e3,  sampling="log"),
             l1_ratio=hp.Float('l1_ratio', 0.1, 0.9),
             max_iter=100000
         ) )
