@@ -80,7 +80,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-o",
+    "-output",
     "--predictions",
     default=outputPredictions,
     help="Output Predictions Base Directory",
@@ -129,7 +129,7 @@ data = args.data
 omics = args.omics
 fingerprints = args.fingerprints
 landmarkList = args.landmarkList
-outputPredictions = args.outputPredictions
+outputPredictions = args.predictions
 tunerDirectory = args.tunerDirectory
 tunerTrials = args.tunerTrials
 tunerRun = args.tunerRun
@@ -242,7 +242,7 @@ X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
-
+#make this a function maybe
 
 #hyperparam tuning
 runString = 'run' + str(tunerRun)
