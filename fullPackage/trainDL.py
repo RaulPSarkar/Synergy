@@ -33,6 +33,14 @@ tempFolder = Path(__file__).parent / 'tempFolder' / 'test.log'
 ##########################
 
 
+data = pd.read_csv(data)
+omics = pd.read_csv(omics, index_col=0)
+fingerprints = pd.read_csv(fingerprints)
+landmarkList = pd.read_csv(landmarkList,sep='\t')
+
+landmarkList = landmarkList.loc[landmarkList['pr_is_lm'] == 1]
+
+
 
 
 def datasetToInput(data, omics, drugs):
