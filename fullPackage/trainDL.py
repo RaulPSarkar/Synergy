@@ -3,7 +3,6 @@ import sys
 import pandas as pd
 import tensorflow as tf
 import yaml
-sys.path.append("..")
 from pathlib import Path
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
@@ -89,6 +88,9 @@ history = model.fit(x=X_train, y=y_train, epochs=500, batch_size=32,
                                     CSVLogger(tempFolder)],
                             validation_data=(X_test, y_test), workers=6,
                             use_multiprocessing=False, validation_batch_size=64)#, class_weight=weights)
+
+
+
 
 
 # best number of epochs

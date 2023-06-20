@@ -16,6 +16,10 @@ from tensorflow.keras.layers import Input, Dense, concatenate
 from tensorflow.keras.metrics import MeanSquaredError, RootMeanSquaredError
 from tensorflow.keras.models import Model
 
+import sys
+sys.path.append("..")
+from src.scoringMetrics import *
+
 
 
 
