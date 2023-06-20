@@ -18,7 +18,6 @@ from tensorflow.keras.models import Model
 
 import sys
 sys.path.append("..")
-from src.scoringMetrics import *
 
 
 
@@ -26,7 +25,7 @@ from src.scoringMetrics import *
 
 def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]',
                           predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
-                          l2=0, input_dropout=0, hidden_dropout=0, optimizer='Adam', learn_rate=0.001):
+                          l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
 	and drugB, with fully-connected layers in all subnetworks."""
 	expr_input = Input(shape=expr_dim, name='expr')
@@ -54,8 +53,7 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
 	# create Model object
 	model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
 
-	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-	              metrics=[keras_r2_score, keras_spearman, keras_pearson])
+	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
 
 
 	return model
