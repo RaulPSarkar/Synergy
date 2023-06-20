@@ -1,5 +1,6 @@
 from ast import literal_eval
 
+import tensorflow as tf
 from tensorflow.keras.applications import DenseNet121
 from tensorflow.keras.layers import Input, Dense, Dropout, BatchNormalization, Activation, \
 	AlphaDropout, Conv1D, Lambda, Concatenate, MaxPooling1D, GlobalMaxPooling1D, Multiply, \
@@ -49,17 +50,9 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
 	# create Model object
 	model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
 
-	# Define optimizer
-	opt_class = dict(getmembers(optimizers))[optimizer]
-	if optimizer == 'SGD':
-		opt = opt_class(lr=learn_rate, decay=1e-6, momentum=0.9, nesterov=True)
-	else:
-		opt = opt_class(lr=learn_rate)
-	
-	# Compile model
-
-	model.compile(loss='mean_squared_error', optimizer=opt,
+	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
 	              metrics=[keras_r2_score, keras_spearman, keras_pearson])
+
 
 	return model
 
