@@ -27,8 +27,8 @@ import argparse
 
 ##########################
 ##########################
-#Change
-modelName = 'en' #en, rf, lgbm, svr, xgboost
+#Default Params (for batch/direct run)
+modelName = 'en' #en, rf, lgbm, svr, xgboost, base
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -38,7 +38,6 @@ tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
-useBaselineInstead = False #change to true to use baseline instead of the model from modelName
 saveTopXHyperparametersPerFold = 3
 ##########################
 ##########################
@@ -50,15 +49,95 @@ parser.add_argument(
     "-m",
     "--model",
     default=modelName,
-    help="Name of the model to train: en, rf, lgbm, svr, xgboost",
+    help="Name of the model to train: en, rf, lgbm, svr, xgboost, base",
+)
+parser.add_argument(
+    "-p",
+    "--data",
+    default=data,
+    help="Processed combo file (from processGDSC.py)",
+)
+
+parser.add_argument(
+    "-o",
+    "--omics",
+    default=omics,
+    help="Omics Dataset file",
+)
+
+parser.add_argument(
+    "-f",
+    "--fingerprints",
+    default=fingerprints,
+    help="Smiles To Fingerprint file",
+)
+
+parser.add_argument(
+    "-l",
+    "--landmarkList",
+    default=landmarkList,
+    help="Landmark genes file",
+)
+
+parser.add_argument(
+    "-o",
+    "--predictions",
+    default=outputPredictions,
+    help="Output Predictions Base Directory",
+)
+
+parser.add_argument(
+    "-trials",
+    "--tunerTrials",
+    default=tunerTrials,
+    help="Number of Trials for each Fold for the tuning process",
+)
+
+parser.add_argument(
+    "-t",
+    "--tunerDirectory",
+    default=tunerDirectory,
+    help="Tuner Base Directory",
+)
+
+
+parser.add_argument(
+    "-run",
+    "--tunerRun",
+    default=tunerRun,
+    help="Tuner Run Number (Use the same number if wanting to use already computed trials)",
+)
+
+parser.add_argument(
+    "-fold",
+    "--kFold",
+    default=kFold,
+    help="Number of folds for cross validation",
+)
+
+parser.add_argument(
+    "-hyper",
+    "--saveTopXHyperparametersPerFold",
+    default=saveTopXHyperparametersPerFold,
+    help="Number of hyperparameters to store in a file adjacent to predictions (merely informative)",
 )
 
 args = parser.parse_args()
-print("Model selected: " + args.model)
+
+modelName = args.model
+data = args.data
+omics = args.omics
+fingerprints = args.fingerprints
+landmarkList = args.landmarkList
+outputPredictions = args.outputPredictions
+tunerDirectory = args.tunerDirectory
+tunerTrials = args.tunerTrials
+tunerRun = args.tunerRun
+kFold = args.kFold
+saveTopXHyperparametersPerFold = args.saveTopXHyperparametersPerFold
 
 
-
-
+print("Model selected: " + modelName)
 
 
 
@@ -66,8 +145,6 @@ print("Model selected: " + args.model)
 #THE TUNER IS ALREADY USING CV AUTOMATICALLY, SO I ONLY HAD TO DO ONE TRAIN-TEST SPLIT
 #(FOR NESTED CV)
 
-if(useBaselineInstead):
-    modelName = 'baseline'
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
 fingerprints = pd.read_csv(fingerprints)
@@ -91,7 +168,7 @@ def build_model(hp):
     elif(use=='en'):
         model = MultiOutputRegressor ( ElasticNet(
             alpha=hp.Float('alpha', 1e-2,1e3,  sampling="log"),
-            l1_ratio=hp.Float('l1_ratio', 0.1, 0.9),
+            l1_ratio=hp.Float('l1_ratio', 0.01, 0.99),
             max_iter=100000
         ) )
     elif(use=='svr'):
@@ -188,7 +265,7 @@ for train_index , test_index in kf.split(X):
     y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
     
 
-    if(not useBaselineInstead):
+    if(modelName!='base'):
     
         fullTunerDirectory = tunerDirectory / modelName
 
@@ -226,7 +303,7 @@ for train_index , test_index in kf.split(X):
         superFinalHyperDF.append(finalHyperDF)
 
     
-    if(not useBaselineInstead):
+    if(modelName!='base'):
         model = build_model(best_hp)
         model.fit(X_train, y_train)
         ypred = model.predict(X_test)

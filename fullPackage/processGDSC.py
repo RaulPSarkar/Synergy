@@ -43,8 +43,6 @@ def datasetToInput(data, omics, drugs):
     fullSet = setWithDrugA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
     print(fullSet)
 
-    #print("Now merging with drug B...")
-
     return fullSet
 
 
