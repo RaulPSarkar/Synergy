@@ -25,7 +25,7 @@ landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 2 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 
@@ -83,13 +83,17 @@ def datasetToInput(data, omics, drugs):
 
 
 def datasetToFingerprint(data, drugs, smilesColumnName='SMILES_A'):
-    data = data[[smilesColumnName]]
+
+    indexes = data.index
+    data = data[[smilesColumnName, 'Experiment']]
     fingerDF = data.merge(drugs, left_on=smilesColumnName, right_on='SMILES_A')
+    fingerDF = fingerDF.reindex(indexes)
 
     #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
     fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('SMILES')]
     fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('drug')]
     fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('Unnamed')]
+    fingerDF = fingerDF.drop(['Experiment'], axis=1)
 
     return fingerDF
 
@@ -104,16 +108,20 @@ def datasetToOmics(data, omics):
 
     omicsFinal = omics.T[  interceptionGenes  ]
 
-    data = data[['CELLNAME']]
+    indexes = data.index
+    data = data[['CELLNAME', 'Experiment','Delta Xmid', 'Delta Emax', 'Tissue', 'Anchor Conc', 'NSC1', 'NSC2']]
     setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
+    setWithOmics = setWithOmics.reindex(indexes)
     
-    setWithOmics = setWithOmics.drop(['CELLNAME'], axis=1)
+    supp = setWithOmics[['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ] 
+    y = setWithOmics[['Delta Xmid', 'Delta Emax']]
+    setWithOmics = setWithOmics.drop(['CELLNAME', 'Experiment', 'Delta Xmid', 'Delta Emax', 'Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2'], axis=1)
 
     #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
     setWithOmics = setWithOmics.loc[:,~setWithOmics.columns.str.startswith('drug')]
     setWithOmics = setWithOmics.loc[:,~setWithOmics.columns.str.startswith('Unnamed')]
 
-    return setWithOmics
+    return setWithOmics, y, supp
 
 
 
@@ -123,21 +131,14 @@ fullSet = datasetToInput(data,omics, fingerprints)
 
 AfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_A')
 BfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_B')
-omicsDF = datasetToOmics(data, omics)
+omicsDF, y, supp  = datasetToOmics(data, omics)
 
 
-#supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
-supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
-
-#Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
-#X = fullSet.loc[:,~fullSet.columns.str.startswith('SMILES')]
-#X = X.loc[:,~X.columns.str.startswith('drug')]
-#X = X.loc[:,~X.columns.str.startswith('Unnamed')]
-#X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
-
-y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
-#make it a function
-
+#print(AfingerDF['Experiment'])
+#print(BfingerDF['Experiment'])
+#print(omicsDF['Experiment'])
+#print(supp)
+#print(y)
 
 
 kf = KFold(n_splits=kFold, shuffle=True)
@@ -156,9 +157,9 @@ for train_index , test_index in kf.split(y):
     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
     omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
 
-    print(AfingerDFTrain)
-    print(BfingerDFTrain)
-    print(omicsDFTrain)
+    #print(AfingerDFTrain)
+    #print(BfingerDFTrain)
+    #print(omicsDFTrain)
 
 
     XTrain = [omicsDFTrain, AfingerDFTrain, BfingerDFTrain]
@@ -167,8 +168,8 @@ for train_index , test_index in kf.split(y):
 
     runStringCV = runString + 'fold' + str(index)
 
-    tuner = keras_tuner.BayesianOptimization(buildModel,objective='val_loss',max_trials=3, directory=fullTunerDirectory, project_name=runStringCV)
-    tuner.search(XTrain, y_train, epochs=15, validation_data=(XTest, y_test))
+    tuner = keras_tuner.BayesianOptimization(buildModel,objective='val_loss',max_trials=1, directory=fullTunerDirectory, project_name=runStringCV)
+    tuner.search(XTrain, y_train, epochs=25, validation_data=(XTest, y_test))
     model = tuner.get_best_models()[0]
 
     ypred = np.squeeze(model.predict(XTest, batch_size=64))
