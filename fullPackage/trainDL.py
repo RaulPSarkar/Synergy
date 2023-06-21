@@ -6,17 +6,18 @@ import yaml
 from pathlib import Path
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
+import keras_tuner
 sys.path.append("..")
 from src.buildDLModel import buildDL
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold 
+import os
 
 
 
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'en' #en, rf, lgbm, svr, xgboost, base
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -40,6 +41,19 @@ landmarkList = pd.read_csv(landmarkList,sep='\t')
 
 landmarkList = landmarkList.loc[landmarkList['pr_is_lm'] == 1]
 
+fullTunerDirectory = tunerDirectory / 'dl'
+runString = 'run' + str(tunerRun)
+
+def buildModel(hp):
+
+    return buildDL(940, 1024, 
+                   expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[256, 128]','[256, 128, 64]']),
+                   drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[256, 128]','[256, 128, 64]']),
+                   predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[256, 128]','[256, 128, 64]']),
+                   hidden_activation=hp.Choice('hidden_activation',['relu','prelu']),
+                   l2=hp.Choice('l2',[0.001, 0.0001]), 
+                   hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4]),
+                    learn_rate=hp.Choice('learn_rate', [0.001, 0.0001]))
 
 
 
@@ -92,7 +106,7 @@ def datasetToOmics(data, omics):
 
     data = data[['CELLNAME']]
     setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
-
+    
     setWithOmics = setWithOmics.drop(['CELLNAME'], axis=1)
 
     #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
@@ -110,10 +124,7 @@ fullSet = datasetToInput(data,omics, fingerprints)
 AfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_A')
 BfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_B')
 omicsDF = datasetToOmics(data, omics)
-#only keep correct columns
-print(AfingerDF)
-print(BfingerDF)
-print(omicsDF)
+
 
 #supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
 supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
@@ -127,12 +138,6 @@ supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experimen
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 #make it a function
 
-
-#940 landmark genes
-
-#'expr_hlayers_sizes': '[256, 128]', 'drug_hlayers_sizes': '[256]', 'predictor_hlayers_sizes': '[256, 128, 64]', 'hidden_dropout': 0.4, 'hidden_activation': 'relu', 'l2': 0.0001, 'learn_rate': 0.001, 
-
-model = buildDL(940, 1024, '[256, 128]', '[256, 128]', '[256, 128, 64]', hidden_activation='relu', l1=0, l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001)
 
 
 kf = KFold(n_splits=kFold, shuffle=True)
@@ -151,36 +156,20 @@ for train_index , test_index in kf.split(y):
     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
     omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
 
+    print(AfingerDFTrain)
+    print(BfingerDFTrain)
+    print(omicsDFTrain)
 
 
     XTrain = [omicsDFTrain, AfingerDFTrain, BfingerDFTrain]
-
-    #XTrain = np.asarray(XTrain).astype('float32')
-
     XTest = [omicsDFTest, AfingerDFTest, BfingerDFTest]
-    #XTest = np.asarray(XTest).astype('float32')
 
 
-    history = model.fit(x=XTrain, y=y_train, epochs=500, batch_size=32,
-                                callbacks=[EarlyStopping(patience=15, restore_best_weights=True),
-                                        CSVLogger(tempFolder)],
-                                validation_data=(XTest, y_test), workers=6,
-                                use_multiprocessing=False, validation_batch_size=64)#, class_weight=weights)
+    runStringCV = runString + 'fold' + str(index)
 
-
-
-
-
-
-
-    # best number of epochs
-    best_n_epochs = np.argmin(history.history['val_loss']) + 1
-    print('best n_epochs: %s' % best_n_epochs)
-
-
-
-    index += 1
-
+    tuner = keras_tuner.BayesianOptimization(buildModel,objective='val_loss',max_trials=3, directory=fullTunerDirectory, project_name=runStringCV)
+    tuner.search(XTrain, y_train, epochs=15, validation_data=(XTest, y_test))
+    model = tuner.get_best_models()[0]
 
     ypred = np.squeeze(model.predict(XTest, batch_size=64))
 
@@ -196,4 +185,19 @@ for train_index , test_index in kf.split(y):
                     'y_predEmax': ypred[:,1]})
 
     path = outputPredictions / 'predictions.csv'
-    df.to_csv(path, index=False)
+
+    saveTo = 'dl' + str(index) + '.csv'
+    df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
+    fullPredictions.append(df)
+
+    index += 1
+
+
+outdir = outputPredictions / 'final' / 'dl'
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
+
+
+totalPreds = pd.concat(fullPredictions, axis=0)
+finalName = 'dl' + runString + '.csv'
+totalPreds.to_csv(outdir / finalName, index=False)

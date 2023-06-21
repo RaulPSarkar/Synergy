@@ -115,13 +115,10 @@ df.drop_duplicates(inplace=True)
 
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 
-#shuffle (because it's not shuffled, which is BAD)
 
-dfSuperFinal['Experiment'] = dfSuperFinal.index
-
-#dfSuperFinal = dfSuperFinal.sample(frac=1)
-
-
+dfSuperFinal['Experiment'] = dfSuperFinal.index #this is used as index to reorganize later
+dfSuperFinal = dfSuperFinal.sample(frac=1)
+#shuffle completely randomly, important for DL train
 dfSuperFinal.to_csv(outputFile)
 
 #fullInput = datasetToInput(dfSuperFinal, crispr, fingerprintTable)
