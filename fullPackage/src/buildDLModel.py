@@ -28,6 +28,7 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
                           l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
 	and drugB, with fully-connected layers in all subnetworks."""
+	
 	expr_input = Input(shape=expr_dim, name='expr')
 	drug1_input = Input(shape=drug_dim, name='drugA')
 	drug2_input = Input(shape=drug_dim, name='drugB')
@@ -52,7 +53,6 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
 
 	# create Model object
 	model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
-
 	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
 
 

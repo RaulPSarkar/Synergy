@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 import sys
 import numpy as np
+from sklearn.utils import shuffle
 sys.path.append("..")
 from src.drugToSmiles import drugToSMILES, SMILEStoFingerprint
 from src.mahalanobis import mahalanobisFunc
@@ -22,8 +23,13 @@ omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
 outputInputFile = Path(__file__).parent / "datasets/fullInput.csv"
 outputSMILEStoFingerprints = Path(__file__).parent / "datasets/smiles2fingerprints.csv"
+outputSMILEStoShuffledFingerprints = Path(__file__).parent / "datasets/smiles2shuffledfingerprints.csv"
+outputSMILEStoDummyFingerprints = Path(__file__).parent / "datasets/smiles2dummyfingerprints.csv"
 splitInto = 10 ##my code is bad, this is to lower RAM usage, leave as is
 useCachedDrugs = True #keep as is, all drugs have been cached
+shuffleFingerprintBits = True #if activated, for each row, this will randomly shuffle the position of each fingerprint bit.
+createDummifiedFingerprint = True #if activated, for each row, this will create a one-hot encoding of drugs, instead of creating fingerprints
+#i.e., each drug will lose its chemical information, and get attributed completely random information (while keeping the number of bits)
 ##########################
 ##########################
 
@@ -72,7 +78,36 @@ for name in range(drugNames.shape[0]):
 smilesTableBackup = smilesTable
 
 fingerprintTable = SMILEStoFingerprint(smilesTableBackup)
-fingerprintTable.to_csv(outputSMILEStoFingerprints)
+fingerprintTable.to_csv(outputSMILEStoFingerprints, index=False)
+
+
+allRows = []
+if(shuffleFingerprintBits):
+    for index, row in fingerprintTable.iterrows():
+        
+        row= row.iloc[0:1024]
+        shuffledRow = shuffle(row, n_samples=len(row))
+        shuffledRowDF = pd.DataFrame([shuffledRow.to_numpy()], columns=fingerprintTable.columns[0:1024])
+        allRows.append(shuffledRowDF)
+
+shuffledFingerprintTable = pd.concat(allRows, axis=0)
+shuffledFingerprintTable['drug'] =fingerprintTable['drug']
+shuffledFingerprintTable['SMILES_A'] =fingerprintTable['SMILES_A']
+shuffledFingerprintTable.to_csv(outputSMILEStoShuffledFingerprints, index=False)
+
+
+if(createDummifiedFingerprint):
+    DFforDummy = fingerprintTable[['drug','SMILES_A']]
+    print(DFforDummy['drug'])
+    DFFingerDummy = pd.get_dummies(DFforDummy['drug'])
+
+    #taken from https://stackoverflow.com/questions/42847441/renaming-columns-using-numbers-from-a-range-in-python-pandas
+    DFFingerDummy = DFFingerDummy.rename(columns={x:y for x,y in zip(DFFingerDummy.columns,range(0,len(DFFingerDummy.columns)))})
+
+    DFFingerDummy['drug'] =DFforDummy['drug']
+    DFFingerDummy['SMILES_A'] =DFforDummy['SMILES_A']
+    DFFingerDummy.to_csv(outputSMILEStoDummyFingerprints, index=False)
+
 
 
 out = full.merge(smilesTable, left_on='Library Name', right_on='drug')

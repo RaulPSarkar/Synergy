@@ -28,14 +28,14 @@ import argparse
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'en' #en, rf, lgbm, svr, xgboost, base
+modelName = 'xgboost' #en, rf, lgbm, svr, xgboost, base
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 15 #how many trials the tuner will do for hyperparameter optimization
+tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
@@ -167,8 +167,8 @@ def build_model(hp):
         )
     elif(use=='en'):
         model = MultiOutputRegressor ( ElasticNet(
-            alpha=hp.Float('alpha', 1e-2,1e3,  sampling="log"),
-            l1_ratio=hp.Float('l1_ratio', 0.01, 0.99),
+            alpha=hp.Float('alpha', 0.1,10,  sampling="log"),
+            l1_ratio=hp.Float('l1_ratio', 0.05, 1),
             max_iter=100000
         ) )
     elif(use=='svr'):
@@ -231,6 +231,7 @@ def datasetToInput(data, omics, drugs):
 
 
 fullSet = datasetToInput(data,omics, fingerprints)
+fullSet = fullSet.sample(frac=1)
 
 #supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
 supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
