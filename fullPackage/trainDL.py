@@ -209,20 +209,20 @@ for train_index , test_index in kf.split(y):
 
     # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
     model = tuner.hypermodel.build(bestHP)
-    history = model.fit(XTrain, y_train, epochs=50, validation_split=0.2)
+    history = model.fit(XTrain, y_train, epochs=5, validation_split=0.2)
 
     valLossPerEpoch = history.history['val_loss']
-    bestEpoch = valLossPerEpoch.index(max(valLossPerEpoch)) + 1
+    bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
     print('Best epoch: %d' % (bestEpoch,))
     hypermodel = tuner.hypermodel.build(bestHP)
-    # Retrain the model
+    # Retrain the model -> i could just save the model instead maybe?
     hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
     #####################################################
     ######################################################
 
     #model = tuner.get_best_models()[0]
 
-    ypred = np.squeeze(model.predict(XTest, batch_size=64))
+    ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
 
     df = pd.DataFrame(data={'Experiment': suppTest['Experiment'],
                     'Cellname': suppTest['CELLNAME'],
