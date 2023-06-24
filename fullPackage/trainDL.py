@@ -175,11 +175,6 @@ for train_index , test_index in kf.split(y):
     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
     omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
 
-    print(AfingerDFTrain)
-    print(BfingerDFTrain)
-    print(omicsDFTrain)
-
-
     XTrain = [omicsDFTrain, AfingerDFTrain, BfingerDFTrain]
     XTest = [omicsDFTest, AfingerDFTest, BfingerDFTest]
     
@@ -203,29 +198,29 @@ for train_index , test_index in kf.split(y):
     tuner.search(x=XTrain,
              y=y_train,
              epochs=30,
-             validation_data=(XTest, y_test))
+             validation_split=0.2)
 
 
+    #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
+    #(After finding optimal HPs, fit the data) https://www.tensorflow.org/tutorials/keras/keras_tuner
+    ######################################################
+    ######################################################
+    bestHP = tuner.get_best_hyperparameters(1)[0]
 
-    #searchSpace = {  # ②
-    #"expr_hlayers_sizes": tune.grid_search([0.001, 0.01, 0.1, 1.0]),
-    #"drug_hlayers_sizes": tune.choice(['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-    #"predictor_hlayers_sizes": tune.choice(['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-    #"l2": tune.choice([0.01, 0.001, 0.0001, 1e-05]),
-    #"hidden_dropout": tune.choice([0.1, 0.2,0.3,0.4,0.5]),
-    #"learn_rate": tune.choice([0.01, 0.001, 0.0001, 1e-05]),
-    #"l2": tune.choice(['relu','prelu', 'leakyrelu']),
-    #}
+    # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
+    model = tuner.hypermodel.build(bestHP)
+    history = model.fit(XTrain, y_train, epochs=50, validation_split=0.2)
 
-    #tuner = tune.Tuner(model_build_function=build_function,objective='val_loss', param_space=searchSpace)
+    valLossPerEpoch = history.history['val_loss']
+    bestEpoch = valLossPerEpoch.index(max(valLossPerEpoch)) + 1
+    print('Best epoch: %d' % (bestEpoch,))
+    hypermodel = tuner.hypermodel.build(bestHP)
+    # Retrain the model
+    hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
+    #####################################################
+    ######################################################
 
-
-
-
-
-
-    
-    model = tuner.get_best_models()[0]
+    #model = tuner.get_best_models()[0]
 
     ypred = np.squeeze(model.predict(XTest, batch_size=64))
 

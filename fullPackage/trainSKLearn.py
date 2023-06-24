@@ -28,15 +28,15 @@ import argparse
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'xgboost' #en, rf, lgbm, svr, xgboost, base
+modelName = 'en' #en, rf, lgbm, svr, xgboost, base
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
+tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 3 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 ##########################
@@ -307,6 +307,7 @@ for train_index , test_index in kf.split(X):
     if(modelName!='base'):
         model = build_model(best_hp)
         model.fit(X_train, y_train)
+        #print(model.estimators_[0].coef_ )
         ypred = model.predict(X_test)
         df = pd.DataFrame(data={'Experiment': suppTest['Experiment'],
                         'Cellname': suppTest['CELLNAME'],
