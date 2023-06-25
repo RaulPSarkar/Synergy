@@ -202,14 +202,14 @@ for train_index , test_index in kf.split(y):
 
 
     #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
-    #(After finding optimal HPs, fit the data) https://www.tensorflow.org/tutorials/keras/keras_tuner
+    #(After tuning optimal HPs, fit the data) https://www.tensorflow.org/tutorials/keras/keras_tuner
     ######################################################
     ######################################################
     bestHP = tuner.get_best_hyperparameters(1)[0]
 
     # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
     model = tuner.hypermodel.build(bestHP)
-    history = model.fit(XTrain, y_train, epochs=5, validation_split=0.2)
+    history = model.fit(XTrain, y_train, epochs=50, validation_split=0.2)
 
     valLossPerEpoch = history.history['val_loss']
     bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
