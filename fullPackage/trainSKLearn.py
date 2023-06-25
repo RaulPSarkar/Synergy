@@ -21,6 +21,7 @@ from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 import argparse
+from sklearn.linear_model import Ridge
 
 
 
@@ -28,7 +29,7 @@ import argparse
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'en' #en, rf, lgbm, svr, xgboost, base
+modelName = 'en' #en, rf, lgbm, svr, xgboost, base, ridge
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -202,6 +203,10 @@ def build_model(hp):
             gamma = hp.Float('gamma', 0, 2),
             subsample = hp.Float('subsample', 0.6, 1.0)
         ))
+    elif(use=='ridge'):
+        model = Ridge(
+            alpha=hp.Float('alpha', 0.1,10,  sampling="log"),
+        )
 
     return model
 
