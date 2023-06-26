@@ -21,12 +21,12 @@ import os
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 #fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
-fingerprints = Path(__file__).parent / 'datasets/smiles2shuffledfingerprints.csv'
+fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 8 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 

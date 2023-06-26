@@ -350,7 +350,8 @@ for train_index , test_index in kf.split(X):
 
 
     saveTo = modelName + str(index) + '.csv'
-    df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
+    saveToFull = outputPredictions / 'temp' / saveTo
+    df.to_csv(saveToFull, index=False)
     index+=1
     fullPredictions.append(df)
 

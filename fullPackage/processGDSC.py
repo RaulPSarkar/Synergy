@@ -83,7 +83,7 @@ fingerprintTable.to_csv(outputSMILEStoFingerprints, index=False)
 
 allRows = []
 if(shuffleFingerprintBits):
-    for index, row in fingerprintTable.iterrows():
+    for index, row in fingerprintTable.iterrows(): 
         
         row= row.iloc[0:1024]
         shuffledRow = shuffle(row, n_samples=len(row))
