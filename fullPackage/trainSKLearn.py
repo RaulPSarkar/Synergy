@@ -132,8 +132,8 @@ fingerprints = args.fingerprints
 landmarkList = args.landmarkList
 outputPredictions = args.predictions
 tunerDirectory = args.tunerDirectory
-tunerTrials = args.tunerTrials
-tunerRun = args.tunerRun
+tunerTrials = int(args.tunerTrials)
+tunerRun = int(args.tunerRun)
 kFold = args.kFold
 saveTopXHyperparametersPerFold = args.saveTopXHyperparametersPerFold
 
