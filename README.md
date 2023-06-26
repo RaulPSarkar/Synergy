@@ -1,22 +1,11 @@
 # Synergy
 
-Before running the code, let's install some libraries:
+Before running the code, let's install the required dependencies. You can install all required dependencies by running:
 
 ```
-pip install pubchempy
-pip install rdkit
-pip install cirpy
-pip install chemspipy
-pip install mahalanobis
-pip install lightgbm
-pip install keras_tuner
-pip install tensorflow
-pip install os
-pip install pathlib
-pip install pandas
+pip install -r requirements.txt
 ```
 
-More libraries than this are used, I didn't account for all of them.
 Once your libraries are installed, we can start by processing our datasets in order to generate the dataframe that we'll be using to train our model.
 
 
