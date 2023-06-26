@@ -169,7 +169,7 @@ def build_model(hp):
         #    n_jobs=-1
         #)
         model = ensemble.RandomForestRegressor(
-            n_estimators=hp.Int('n_estimators', 100, 500),
+            n_estimators=hp.Int('n_estimators', 100, 1000),
             max_depth=hp.Choice('max_depth', [5, 10, 15, 20]),
             max_features=hp.Choice('max_features', ['sqrt', 'log2']),
             min_samples_split=hp.Int('min_samples_split', 2, 5),
