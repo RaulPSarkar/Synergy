@@ -37,7 +37,7 @@ landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 3 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 11 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 ##########################
