@@ -32,9 +32,9 @@ from sklearn.linear_model import Ridge
 modelName = 'en' #en, rf, lgbm, svr, xgboost, base, ridge
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
-fingerprints = Path(__file__).parent / 'datasets/smiles2shuffledfingerprints.csv'
+fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
-outputPredictions = Path(__file__).parent / 'predictionsShuffled'
+outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 3 #increase if you want to start the hyperparameter optimization process anew
