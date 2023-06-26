@@ -36,7 +36,7 @@ fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 40 #how many trials the tuner will do for hyperparameter optimization
+tunerTrials = 32 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 11 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
@@ -170,7 +170,7 @@ def build_model(hp):
         #)
         model = ensemble.RandomForestRegressor(
             n_estimators=hp.Int('n_estimators', 100, 1000),
-            max_depth=hp.Int('max_depth', 3, 45),
+            max_depth=hp.Int('max_depth', 3, 55),
             max_features=hp.Choice('max_features', ['sqrt', 'log2']),
             min_samples_split=hp.Int('min_samples_split', 2, 5),
             min_samples_leaf=hp.Int('min_samples_leaf', 1, 5),
