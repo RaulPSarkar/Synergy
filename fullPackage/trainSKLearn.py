@@ -34,7 +34,7 @@ data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
-outputPredictions = Path(__file__).parent / 'predictions'
+outputPredictions = Path(__file__).parent / 'predictionsShuffled'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 3 #increase if you want to start the hyperparameter optimization process anew
@@ -132,8 +132,8 @@ fingerprints = args.fingerprints
 landmarkList = args.landmarkList
 outputPredictions = args.predictions
 tunerDirectory = args.tunerDirectory
-tunerTrials = int(args.tunerTrials)
-tunerRun = int(args.tunerRun)
+tunerTrials = args.tunerTrials
+tunerRun = args.tunerRun
 kFold = args.kFold
 saveTopXHyperparametersPerFold = args.saveTopXHyperparametersPerFold
 
@@ -350,8 +350,7 @@ for train_index , test_index in kf.split(X):
 
 
     saveTo = modelName + str(index) + '.csv'
-    saveToFull = outputPredictions / 'temp' / saveTo
-    df.to_csv(saveToFull, index=False)
+    df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
     index+=1
     fullPredictions.append(df)
 
