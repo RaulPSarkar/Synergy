@@ -10,7 +10,7 @@ from src.graphFunctions import regressionGraphs, barplot
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dl.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dl0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dl0.csv', Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun8.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
 predictionNames = ['Baseline', 'EN', 'DL', 'DL-Shuffled Bits', 'LGBM', 'RF', 'XGBoost', 'SVR']
 saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
 modelStatsFolder =  Path(__file__).parent / 'results'

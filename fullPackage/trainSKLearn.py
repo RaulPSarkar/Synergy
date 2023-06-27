@@ -21,6 +21,7 @@ from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 import argparse
+from sklearn.linear_model import Ridge
 
 
 
@@ -28,15 +29,15 @@ import argparse
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'xgboost' #en, rf, lgbm, svr, xgboost, base
+modelName = 'en' #en, rf, lgbm, svr, xgboost, base, ridge
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 50 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
+tunerTrials = 40 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 11 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 ##########################
@@ -131,14 +132,16 @@ fingerprints = args.fingerprints
 landmarkList = args.landmarkList
 outputPredictions = args.predictions
 tunerDirectory = args.tunerDirectory
-tunerTrials = args.tunerTrials
-tunerRun = args.tunerRun
+tunerTrials = int(args.tunerTrials)
+tunerRun = int(args.tunerRun)
 kFold = args.kFold
 saveTopXHyperparametersPerFold = args.saveTopXHyperparametersPerFold
 
 
 print("Model selected: " + modelName)
 
+if not os.path.exists(outputPredictions):
+    os.mkdir(outputPredictions)
 
 
 
@@ -156,15 +159,26 @@ landmarkList = landmarkList.loc[landmarkList['pr_is_lm'] == 1]
 def build_model(hp):
     use = modelName
     if(use=='rf'):
+        #model = ensemble.RandomForestRegressor(
+        #    n_estimators=hp.Int('n_estimators', 10, 350),
+        #    max_depth=hp.Int('max_depth', 3, 45),
+        #    max_features=3,
+        #    min_samples_split=4,
+        #    bootstrap=hp.Boolean('bootstrap', True, False),
+        #    #criterion=hp.Choice('criterion', ['gini','entropy']),
+        #    n_jobs=-1
+        #)
         model = ensemble.RandomForestRegressor(
-            n_estimators=hp.Int('n_estimators', 10, 250),
-            max_depth=hp.Int('max_depth', 3, 35),
-            max_features=3,
-            min_samples_split=4,
+            n_estimators=hp.Int('n_estimators', 100, 1000),
+            max_depth=hp.Int('max_depth', 3, 55),
+            max_features=hp.Choice('max_features', ['sqrt', 'log2']),
+            min_samples_split=hp.Int('min_samples_split', 2, 5),
+            min_samples_leaf=hp.Int('min_samples_leaf', 1, 5),
             bootstrap=hp.Boolean('bootstrap', True, False),
             #criterion=hp.Choice('criterion', ['gini','entropy']),
             n_jobs=-1
         )
+
     elif(use=='en'):
         model = MultiOutputRegressor ( ElasticNet(
             alpha=hp.Float('alpha', 0.1,10,  sampling="log"),
@@ -202,6 +216,10 @@ def build_model(hp):
             gamma = hp.Float('gamma', 0, 2),
             subsample = hp.Float('subsample', 0.6, 1.0)
         ))
+    elif(use=='ridge'):
+        model = Ridge(
+            alpha=hp.Float('alpha', 0.1,10,  sampling="log"),
+        )
 
     return model
 
@@ -215,7 +233,17 @@ def datasetToInput(data, omics, drugs):
         if gene in omics.T.columns:
             interceptionGenes.append(gene)
 
+
+
+
     omicsFinal = omics.T[  interceptionGenes  ]
+
+    #associationGenes = []
+    #for gene in associationGenes:
+    #    if gene in omicsFinal.columns:
+    #        associationGenes.append(gene)
+
+    #omicsFinal = omicsFinal[  associationGenes  ]
 
 
     print("Generating Input Dataset. This may take a while...")
@@ -307,6 +335,7 @@ for train_index , test_index in kf.split(X):
     if(modelName!='base'):
         model = build_model(best_hp)
         model.fit(X_train, y_train)
+        #print(model.estimators_[0].coef_ )
         ypred = model.predict(X_test)
         df = pd.DataFrame(data={'Experiment': suppTest['Experiment'],
                         'Cellname': suppTest['CELLNAME'],

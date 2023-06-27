@@ -1,0 +1,17 @@
+ChemSpiPy
+CIRpy
+keras_tuner
+lightgbm
+matplotlib
+numpy
+numpy
+numpy
+pandas
+PubChemPy
+PyYAML
+rdkit
+scikit_learn
+scipy
+seaborn
+statsmodels
+tensorflow
