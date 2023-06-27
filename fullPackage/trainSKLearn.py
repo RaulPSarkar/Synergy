@@ -44,6 +44,8 @@ saveTopXHyperparametersPerFold = 3
 ##########################
 
 
+#tunerDirectory = 'W:\Media\Tuner'
+
 parser = argparse.ArgumentParser(description="Training synergy prediction models with sklearn models")
 
 parser.add_argument(
