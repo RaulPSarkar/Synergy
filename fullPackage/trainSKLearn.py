@@ -29,7 +29,7 @@ from sklearn.linear_model import Ridge
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'rf' #en, rf, lgbm, svr, xgboost, base, ridge
+modelName = 'en' #en, rf, lgbm, svr, xgboost, base, ridge
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
