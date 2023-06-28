@@ -29,14 +29,14 @@ from sklearn.linear_model import Ridge
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-modelName = 'en' #en, rf, lgbm, svr, xgboost, base, ridge
+modelName = 'rf' #en, rf, lgbm, svr, xgboost, base, ridge
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
-tunerTrials = 40 #how many trials the tuner will do for hyperparameter optimization
+tunerTrials = 32 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 11 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
@@ -44,9 +44,10 @@ saveTopXHyperparametersPerFold = 3
 ##########################
 
 
-#tunerDirectory = 'W:\Media\Tuner'
+#tunerDirectory = Path('W:\Media') / 'tuner'
 
-parser = argparse.ArgumentParser(description="Training synergy prediction models with sklearn models")
+
+parser = argparse.ArgumentParser(description="Training synergy prediction models with sklearn")
 
 parser.add_argument(
     "-m",
@@ -275,6 +276,8 @@ X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid'
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 #make this a function maybe
 
+#print(X.columns.to_list()) - Just to make sure everything was okay, which it was
+
 #hyperparam tuning
 runString = 'run' + str(tunerRun)
 
@@ -313,7 +316,7 @@ for train_index , test_index in kf.split(X):
             project_name= runStringCV)
 
 
-        tuner.search(X, y.to_numpy())
+        tuner.search(X_train, y_train.to_numpy())
         best_hp = tuner.get_best_hyperparameters()[0]
         #technically, no need to grab best HPs anymore because it's already fitted to training dataset
         #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
