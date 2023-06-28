@@ -14,31 +14,31 @@ def barplot(df, saveFolder, type='gdsc'):
 
     if(type=='almanac'):
         splot=sns.barplot(x='model',y='r2_score',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])
-        plt.xlabel("Model Used", size=26)
+        plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("Comboscores R\u00b2", size=26)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("Comboscores R\u00b2", size=36)
         plt.show()
         splot=sns.barplot(x='model',y='spearman',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])
-        plt.xlabel("Model Used", size=26)
+        plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("Comboscores Spearman's rho", size=26)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("Comboscores Spearman's rho", size=36)
         plt.show()
         splot=sns.barplot(x='model',y='mean_squared_error',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
+        plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("Comboscores MSE", size=26)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("Comboscores MSE", size=36)
         plt.show()
 
     elif(type=='gdsc'):
 
         splot =sns.barplot(x='name',y='R2 IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("R\u00b2 ΔIC50", size=26)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("R\u00b2 ΔIC50", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -53,10 +53,10 @@ def barplot(df, saveFolder, type='gdsc'):
 
 
         splot=sns.barplot(x='name',y='R2 Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("R\u00b2 ΔEmax", size=26)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("R\u00b2 ΔEmax", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -68,10 +68,10 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.close()
 
         splot=sns.barplot(x='name',y='Spearman IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("Spearman's rho ΔIC50", size=26)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("Spearman's rho ΔIC50", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -83,10 +83,10 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.close()
 
         splot=sns.barplot(x='name',y='Spearman Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("Spearman's rho ΔEmax", size=26)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("Spearman's rho ΔEmax", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -98,10 +98,10 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.close()
 
         splot=sns.barplot(x='name',y='MSE IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("MSE ΔIC50", size=26)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
+        plt.bar_label(splot.containers[0], size=36,label_type='center')
+        plt.ylabel("MSE ΔIC50", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -113,10 +113,10 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.close()
 
         splot=sns.barplot(x='name',y='MSE Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=26)
-        plt.title('Performance for each model', size=34)
+        plt.xlabel("Model Used", size=36)
+        plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=26,label_type='center')
-        plt.ylabel("MSE ΔEmax", size=26)
+        plt.ylabel("MSE ΔEmax", size=36)
 
         #to save in fullscreen
         figure = plt.gcf()

@@ -10,10 +10,10 @@ from src.graphFunctions import regressionGraphs, barplot
 ##########################
 ##########################
 #Change
-#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'temp'/ 'rf0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
-#predictionNames = ['Baseline', 'EN', 'DL', 'LGBM', 'RF', 'XGBoost', 'SVR']
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun8.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'temp'/ 'rf0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
-predictionNames = ['Baseline', 'EN', 'DL', 'DL-Shuffled', 'LGBM', 'RF', 'XGBoost', 'SVR']
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'temp'/ 'rf0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
+predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM',   'Baseline']
+#predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'temp'/ 'rf0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv',  Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun8.csv']
+#predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM',   'Baseline', 'DL-Shuffled' ]
 saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regularWithShuffled'
 modelStatsFolder =  Path(__file__).parent / 'results'
 ##########################
@@ -69,9 +69,9 @@ print(fullStatsDF)
 ##############################################
 ####GENERATE SCATTER GRAPHS AND BAR PLOTS
 ##############################################
-roundedOld = fullStatsDF.round(4)
+roundedOld = fullStatsDF.round(2)
 fullStatsDF = fullStatsDF.set_index('name')
-rounded = fullStatsDF.round(4)
+rounded = fullStatsDF.round(2)
 
 counter = 0
 
