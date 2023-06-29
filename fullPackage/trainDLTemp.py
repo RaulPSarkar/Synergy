@@ -18,7 +18,7 @@ import os
 ##########################
 ##########################
 #Default Params (for batch/direct run)
-data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
+data = Path(__file__).parent / 'datasets/processedCRISPRTemp.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 #fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -30,6 +30,9 @@ tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimizat
 tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
+
+sizeOmics = 940
+sizeCoeffs = 925
 
 tempFolder = Path(__file__).parent / 'tempFolder' / 'test.log'
 ##########################
@@ -50,7 +53,7 @@ runString = 'run' + str(tunerRun)
 
 def buildModel(hp):
 
-    return buildDL(940, 1024, 
+    return buildDL(sizeOmics, sizeCoeffs, 
                    expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                    drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                    predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -60,7 +63,7 @@ def buildModel(hp):
                     learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
 
 
-def datasetToInput(data, omics, drugs, coeffs):
+def datasetToInput(data, omics, coeffs):
 
     interceptionGenes = []
     interceptionCoeffs = []
@@ -73,14 +76,28 @@ def datasetToInput(data, omics, drugs, coeffs):
 
     omicsFinal = omics.T[  interceptionGenes  ]
     coeffsFinal = coeffs.T[interceptionCoeffs]
+    coeffsFinal['drug'] = coeffsFinal.index
+    coeffsFinal['drug'] = coeffsFinal['drug']
+    coeffsFinal= coeffsFinal.fillna(0)
     print(coeffsFinal)
+
+    #get list of all used drugs
+    listOfDrugs = data['NSC1']
+    listOfDrugs = listOfDrugs.drop_duplicates().to_list()
+    print(len (listOfDrugs) )
+
+    coeffsFinal = coeffsFinal[coeffsFinal['drug'].isin(listOfDrugs)]
+
+    #data['NSC2'] =
 
     print("Generating Input Dataset. This may take a while...")
     setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
     print("Now merging with drug A...")
-    setWithDrugA = setWithOmics.merge(drugs, on='SMILES_A')
+    setWithDrugA = setWithOmics.merge(coeffsFinal, left_on='NSC1', right_on='drug')
     print("Now merging with drug B...")
-    fullSet = setWithDrugA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
+    fullSet = setWithDrugA.merge(coeffsFinal, left_on='NSC2', right_on='drug')
+
+    print(fullSet)
 
     return fullSet
 
@@ -89,64 +106,9 @@ def datasetToInput(data, omics, drugs, coeffs):
 
 
 
-
-def datasetToFingerprint(data, drugs, smilesColumnName='SMILES_A'):
-
-    indexes = data['Experiment']
-    data = data[[smilesColumnName, 'Experiment']]
-    fingerDF = data.merge(drugs, left_on=smilesColumnName, right_on='SMILES_A')
-    fingerDF = fingerDF.reindex(indexes)
-    print(fingerDF)
-
-    #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
-    fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('SMILES')]
-    fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('drug')]
-    fingerDF = fingerDF.loc[:,~fingerDF.columns.str.startswith('Unnamed')]
-    fingerDF = fingerDF.drop(['Experiment','Experiment'], axis=1)
-
-    return fingerDF
-
-
-
-def datasetToOmics(data, omics):
-
-    interceptionGenes = []
-    for gene in landmarkList['pr_gene_symbol']:
-        if gene in omics.T.columns:
-            interceptionGenes.append(gene)
-
-    omicsFinal = omics.T[  interceptionGenes  ]
-
-    indexes = data.index
-    data = data[['CELLNAME', 'Experiment','Delta Xmid', 'Delta Emax', 'Tissue', 'Anchor Conc', 'NSC1', 'NSC2']]
-    setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
-    setWithOmics = setWithOmics.reindex(indexes)
-    
-    supp = setWithOmics[['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ] 
-    y = setWithOmics[['Delta Xmid', 'Delta Emax']]
-    setWithOmics = setWithOmics.drop(['CELLNAME', 'Experiment', 'Delta Xmid', 'Delta Emax', 'Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2'], axis=1)
-
-    #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
-    setWithOmics = setWithOmics.loc[:,~setWithOmics.columns.str.startswith('drug')]
-    setWithOmics = setWithOmics.loc[:,~setWithOmics.columns.str.startswith('Unnamed')]
-
-    return setWithOmics, y, supp
-
-
-
-
-
-fullSet = datasetToInput(data,omics, fingerprints, coeffs)
+fullSet = datasetToInput(data,omics, coeffs)
 fullSet = fullSet.sample(frac=1)
 
-#AfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_A')
-#BfingerDF = datasetToFingerprint(data,fingerprints, 'SMILES_B')
-#omicsDF, y, supp  = datasetToOmics(data, omics)
-
-#print(supp)
-#print(y)
-
-#fullSet = datasetToInput(data,omics, fingerprints)
 
 #supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
 supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
@@ -157,14 +119,18 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
+print(X)
+
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 
+
+
 ind = 0
-omicsDF = X.iloc[:, 0: 940]
-ind += 940
-AfingerDF = X.iloc[:, ind: ind+1024]
-ind += 1024
-BfingerDF = X.iloc[:, ind: ind+1024]
+AfingerDF = X.iloc[:, ind: ind+sizeCoeffs]
+ind += sizeCoeffs
+BfingerDF = X.iloc[:, ind: ind+sizeCoeffs]
+ind += sizeCoeffs
+omicsDF = X.iloc[:, ind: ind+sizeOmics]
 
 
 kf = KFold(n_splits=kFold, shuffle=True)
@@ -189,8 +155,6 @@ for train_index , test_index in kf.split(y):
 
     runStringCV = runString + 'fold' + str(index)
 
-    #tuner = keras_tuner.BayesianOptimization(buildModel,objective='val_loss',max_trials=3, directory=fullTunerDirectory, project_name=runStringCV)
-    #tuner.search(XTrain, y_train, epochs=20, validation_data=(XTest, y_test))
 
 
     tuner = keras_tuner.Hyperband(

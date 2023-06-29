@@ -19,7 +19,7 @@ coeffs = coeffs.drop(['Drug_id'], axis=1)
 
 print(coeffs)
 
-coeffs = coeffs[coeffs['Dataset'] != 'GDSC2']
+#coeffs = coeffs[coeffs['Dataset'] != 'GDSC2']
 #print(coeffs)
 
 coeffs = coeffs.drop_duplicates(subset=['Drug_name','features'])

@@ -21,7 +21,6 @@ breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
 omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
-outputInputFile = Path(__file__).parent / "datasets/fullInput.csv"
 outputSMILEStoFingerprints = Path(__file__).parent / "datasets/smiles2fingerprints.csv"
 outputSMILEStoShuffledFingerprints = Path(__file__).parent / "datasets/smiles2shuffledfingerprints.csv"
 outputSMILEStoDummyFingerprints = Path(__file__).parent / "datasets/smiles2dummyfingerprints.csv"
@@ -33,23 +32,6 @@ createDummifiedFingerprint = True #if activated, for each row, this will create 
 ##########################
 ##########################
 
-
-
-
-def datasetToInput(data, omics, drugs):
-
-    print("Generating Input Dataset. This may take a while...")
-    setWithOmics = data.merge(omics.T, left_on='CELLNAME', right_index=True)
-    
-    
-    print("Now merging with drug A...")
-    setWithDrugA = setWithOmics.merge(drugs, on='SMILES_A')
-    print(setWithDrugA)
-    print("Now merging with drug B...")
-    fullSet = setWithDrugA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
-    print(fullSet)
-
-    return fullSet
 
 
 
@@ -153,10 +135,29 @@ dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'N
 
 dfSuperFinal['Experiment'] = dfSuperFinal.index #this is used as index to reorganize later
 dfSuperFinal = dfSuperFinal.sample(frac=1)
-#shuffle completely randomly, important for DL train
-dfSuperFinal.to_csv(outputFile)
 
-#fullInput = datasetToInput(dfSuperFinal, crispr, fingerprintTable)
-#fullInput.to_csv(outputInputFile)
+
+
+#coeffs = Path(__file__).parent / 'datasets/CoefficientsLasso.csv'
+#coeffs = pd.read_csv(coeffs, index_col=0)
+#coeffs = coeffs[coeffs['features'] != '(Intercept)']
+#coeffs = coeffs.drop(['Drug_id'], axis=1)
+#coeffs = coeffs.drop_duplicates(subset=['Drug_name','features'])
+#coeffs = pd.pivot(coeffs, index='features', columns='Drug_name', values='EN_coef')
+#outputFile = Path(__file__).parent / "datasets/coefsProcessed.csv"
+#df.to_csv(outputFile)
+#obtain all the drugs, and merge
+
+#coeffs = coeffs.T
+#coeffs['drug'] = coeffs.index
+#coeffs['drug'] = coeffs.index
+
+#listOfDrugs = coeffs.columns
+#listOfDrugs = listOfDrugs.drop_duplicates().to_list()
+#dfSuperFinal = dfSuperFinal[dfSuperFinal['NSC1'].isin(listOfDrugs)]
+
+
+
+dfSuperFinal.to_csv(outputFile)
 
 
