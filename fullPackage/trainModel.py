@@ -23,14 +23,27 @@ from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.linear_model import Ridge
-
+import tensorflow as tf
 
 
 
 ##########################
 ##########################
+
+###########PARAMETERS
+modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull
+crossValidationMode = 'regular' #drug, cell, regular
+tunerTrials = 13 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 99 #increase if you want to start the hyperparameter optimization process anew
+kFold = 5 #number of folds to use for cross-validation
+saveTopXHyperparametersPerFold = 3
+useTopMutatedList = True
+useCoeffs = False
+useDrugs = True
+sizePrints = 1024
+
+
 ############FILEPATHS
-
 data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
 omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
@@ -42,18 +55,7 @@ tunerDirectory = Path(__file__).parent / 'tuner'
 #tunerDirectory = Path('W:\Media') / 'tuner'
 coeffs = Path(__file__).parent / 'datasets/coefsProcessed.csv'
 
-###########PARAMETERS
 
-modelName = 'dlFull'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull
-crossValidationMode = 'cell' #drug, cell, regular
-tunerTrials = 13 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 66 #increase if you want to start the hyperparameter optimization process anew
-kFold = 5 #number of folds to use for cross-validation
-saveTopXHyperparametersPerFold = 3
-useTopMutatedList = True
-useCoeffs = False
-useDrugs = True
-sizePrints = 1024
 ##########################
 ##########################
 
@@ -178,7 +180,7 @@ top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
 sizeOmics = 0 #auto updates
 sizeCoeffs = 0 #auto updates
 
-
+print(tf.config.list_physical_devices('GPU'))
 print("Model selected: " + modelName)
 if (modelName.strip()=='dl'):
     useCoeffs = False

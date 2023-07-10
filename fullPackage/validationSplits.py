@@ -11,3 +11,4 @@ from sklearn.model_selection import KFold
 #check this: https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html#sphx-glr-auto-examples-model-selection-plot-cv-indices-py
 #check predictions on latest thing
 
+#also, make tuner trials actually matter for DL
