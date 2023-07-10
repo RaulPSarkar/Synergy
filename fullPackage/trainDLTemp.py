@@ -15,6 +15,7 @@ import os
 
 
 
+
 ##########################
 ##########################
 #Default Params (for batch/direct run)
@@ -24,25 +25,33 @@ omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 coeffs = Path(__file__).parent / 'datasets/coefsProcessed.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
+top3000MutatedList = Path(__file__).parent / 'datasets/top15mutatedgenes.tsv'
+
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 tunerTrials = 20 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 3 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 
 sizeOmics = 940
-sizeCoeffs = 925
+sizeCoeffs = 2877
+sizePrints = 1024
 
 tempFolder = Path(__file__).parent / 'tempFolder' / 'test.log'
 ##########################
 ##########################
 
 
+
+useCoeffs = True
+useDrugs = True
+
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
 fingerprints = pd.read_csv(fingerprints)
 landmarkList = pd.read_csv(landmarkList,sep='\t')
+top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
 coeffs = pd.read_csv(coeffs, index_col=0)
 
 
@@ -53,9 +62,15 @@ runString = 'run' + str(tunerRun)
 
 def buildModel(hp):
 
-    return buildDL(sizeOmics, sizeCoeffs, 
+
+    return buildDL(expr_dim = sizeOmics, 
+                   drug_dim = sizePrints,
+                   coeffs_dim= sizeCoeffs,
+                   useCoeffs=useCoeffs,
+                   useDrugs=useDrugs,
                    expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                    drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                   coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                    predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                    hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
                    l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
@@ -63,50 +78,63 @@ def buildModel(hp):
                     learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
 
 
-def datasetToInput(data, omics, coeffs):
+def datasetToInput(data, omics, coeffs, drugs):
+
 
     interceptionGenes = []
     interceptionCoeffs = []
     for gene in landmarkList['pr_gene_symbol']:
         if gene in omics.T.columns:
             interceptionGenes.append(gene)
+        #if gene in coeffs.index:
+        #   interceptionCoeffs.append(gene)
+    
+    for gene in top3000MutatedList['Gene']:
         if gene in coeffs.index:
             interceptionCoeffs.append(gene)
-    
+    print(len( interceptionCoeffs ) )
 
     omicsFinal = omics.T[  interceptionGenes  ]
     coeffsFinal = coeffs.T[interceptionCoeffs]
     coeffsFinal['drug'] = coeffsFinal.index
     coeffsFinal['drug'] = coeffsFinal['drug']
     coeffsFinal= coeffsFinal.fillna(0)
-    print(coeffsFinal)
+    #print(coeffsFinal)
 
     #get list of all used drugs
     listOfDrugs = data['NSC1']
     listOfDrugs = listOfDrugs.drop_duplicates().to_list()
-    print(len (listOfDrugs) )
+    #print(len (listOfDrugs) )
 
     coeffsFinal = coeffsFinal[coeffsFinal['drug'].isin(listOfDrugs)]
 
-    #data['NSC2'] =
+    #this is just to distinguish which genes come from which drug (or if they come from the omics dataset)
+    coeffsFinalA = coeffsFinal.add_suffix('Alist')
+    coeffsFinalB = coeffsFinal.add_suffix('Blist')
+    coeffsFinalA = coeffsFinalA.rename(columns={'drugAlist': 'drugA'})
+    coeffsFinalB = coeffsFinalB.rename(columns={'drugBlist': 'drugB'})
+
 
     print("Generating Input Dataset. This may take a while...")
     setWithOmics = data.merge(omicsFinal, left_on='CELLNAME', right_index=True)
-    print("Now merging with drug A...")
-    setWithDrugA = setWithOmics.merge(coeffsFinal, left_on='NSC1', right_on='drug')
-    print("Now merging with drug B...")
-    fullSet = setWithDrugA.merge(coeffsFinal, left_on='NSC2', right_on='drug')
+    print("Now merging with coeffs A...")
+    setWithDrugA = setWithOmics.merge(coeffsFinalA, left_on='NSC1', right_on='drugA')
+    print("Now merging with coeffs B...")
+    fullSet = setWithDrugA.merge(coeffsFinalB, left_on='NSC2', right_on='drugB')
 
-    print(fullSet)
+    print("Now merging with drug A fingerprint...")
+    fullSetA = fullSet.merge(drugs, on='SMILES_A')
+    print("Now merging with drug B fingerprint...")
+    fullSetB = fullSetA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
 
-    return fullSet
+    return fullSetB
 
 
 
 
 
 
-fullSet = datasetToInput(data,omics, coeffs)
+fullSet = datasetToInput(data,omics, coeffs, fingerprints)
 fullSet = fullSet.sample(frac=1)
 
 
@@ -119,18 +147,19 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
-print(X)
-
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 
-
-
 ind = 0
-AfingerDF = X.iloc[:, ind: ind+sizeCoeffs]
-ind += sizeCoeffs
-BfingerDF = X.iloc[:, ind: ind+sizeCoeffs]
-ind += sizeCoeffs
 omicsDF = X.iloc[:, ind: ind+sizeOmics]
+ind += sizeOmics
+AcoeffsDF = X.iloc[:, ind: ind+sizeCoeffs]
+ind += sizeCoeffs
+BcoeffsDF = X.iloc[:, ind: ind+sizeCoeffs]
+
+ind += sizeCoeffs
+AfingerDF = X.iloc[:, ind: ind+sizePrints]
+ind += sizePrints
+BfingerDF = X.iloc[:, ind: ind+sizePrints]
 
 
 kf = KFold(n_splits=kFold, shuffle=True)
@@ -145,12 +174,21 @@ for train_index , test_index in kf.split(y):
 
     y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
     
+    AcoeffsDFTrain, AcoeffsDFTest = AcoeffsDF.iloc[train_index,:],AcoeffsDF.iloc[test_index,:]
+    BcoeffsDFTrain, BcoeffsDFTest = BcoeffsDF.iloc[train_index,:],BcoeffsDF.iloc[test_index,:]
+
     AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
+
+    print(AfingerDFTrain)
+    print(BfingerDFTrain)
+    print(AcoeffsDFTrain)
+    print(BcoeffsDFTrain)
+
     omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
 
-    XTrain = [omicsDFTrain, AfingerDFTrain, BfingerDFTrain]
-    XTest = [omicsDFTest, AfingerDFTest, BfingerDFTest]
+    XTrain = [omicsDFTrain, AcoeffsDFTrain, BcoeffsDFTrain, AfingerDFTrain, BfingerDFTrain]
+    XTest = [omicsDFTest, AcoeffsDFTest, BcoeffsDFTest, AfingerDFTest, BfingerDFTest]
     
 
     runStringCV = runString + 'fold' + str(index)
@@ -172,7 +210,7 @@ for train_index , test_index in kf.split(y):
              epochs=30,
              validation_split=0.2)
 
-
+    
     #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
     #(After tuning optimal HPs, fit the data) https://www.tensorflow.org/tutorials/keras/keras_tuner
     ######################################################
@@ -181,7 +219,7 @@ for train_index , test_index in kf.split(y):
 
     # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
     model = tuner.hypermodel.build(bestHP)
-    history = model.fit(XTrain, y_train, epochs=50, validation_split=0.2)
+    history = model.fit(XTrain, y_train, epochs=60, validation_split=0.2)
 
     valLossPerEpoch = history.history['val_loss']
     bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1

@@ -12,8 +12,8 @@ from pathlib import Path
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DLrun1.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv']
-predictionWeights = [10,1,1]
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DLrun1.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv']
+predictionWeights = [1,1,1, 1]
 outputEnsembleFile = Path(__file__).parent / 'predictions'  /'final'/ 'ensemble' / 'ensemble.csv'
 ##########################
 ##########################

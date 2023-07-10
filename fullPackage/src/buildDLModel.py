@@ -23,25 +23,50 @@ sys.path.append("..")
 
 
 
-def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]',
+def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
                           predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
                           l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
 	and drugB, with fully-connected layers in all subnetworks."""
 	
 	expr_input = Input(shape=expr_dim, name='expr')
-	drug1_input = Input(shape=drug_dim, name='drugA')
-	drug2_input = Input(shape=drug_dim, name='drugB')
+	if(useCoeffs):
+		coeffs1_input = Input(shape=coeffs_dim, name='coeffsA')
+		coeffs2_input = Input(shape=coeffs_dim, name='coeffsB')
+	if(useDrugs):
+		drug1_input = Input(shape=drug_dim, name='drugA')
+		drug2_input = Input(shape=drug_dim, name='drugB')
+
 	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
 	                      hidden_activation=hidden_activation, input_dropout=input_dropout,
 	                      hidden_dropout=hidden_dropout)
-	drug_submodel = drug_dense_submodel(drug_dim, hlayers_sizes=drug_hlayers_sizes, l1_regularization=l1,
-	                                    l2_regularization=l2, hidden_activation=hidden_activation,
-	                                    input_dropout=input_dropout, hidden_dropout=hidden_dropout)
-	drugA = drug_submodel(drug1_input)
-	drugB = drug_submodel(drug2_input)
+	
+	
 
-	concat = concatenate([expr, drugA, drugB])
+	if(useDrugs):
+		drug_submodel = drug_dense_submodel(drug_dim, hlayers_sizes=drug_hlayers_sizes, l1_regularization=l1,
+											l2_regularization=l2, hidden_activation=hidden_activation,
+											input_dropout=input_dropout, hidden_dropout=hidden_dropout)
+		
+		drugA = drug_submodel(drug1_input)
+		drugB = drug_submodel(drug2_input)
+
+
+	if(useCoeffs):
+		coeffs_submodel = drug_dense_submodel(coeffs_dim, hlayers_sizes=coeffs_hlayers_sizes, l1_regularization=l1,
+										l2_regularization=l2, hidden_activation=hidden_activation,
+										input_dropout=input_dropout, hidden_dropout=hidden_dropout, layerName='coeffs_dense_submodel')
+
+		coeffsA = coeffs_submodel(coeffs1_input)
+		coeffsB = coeffs_submodel(coeffs2_input)
+
+
+	if(useCoeffs and useDrugs):
+		concat = concatenate([expr, coeffsA, coeffsB, drugA, drugB])
+	elif(useDrugs):
+		concat = concatenate([expr, drugA, drugB])
+	else:
+		concat = concatenate([expr, coeffsA, coeffsB])
 
 	# Additional dense layers after concatenating:
 	main_branch = dense_submodel(concat, hlayers_sizes=predictor_hlayers_sizes,
@@ -52,7 +77,13 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
 	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(main_branch)
 
 	# create Model object
-	model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
+	if(useCoeffs and useDrugs):
+		model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input, drug1_input, drug2_input], outputs=[output])
+	elif(useDrugs):
+		model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
+	else:
+		model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input], outputs=[output])
+		
 	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
 
 
@@ -61,7 +92,7 @@ def buildDL(expr_dim=None, drug_dim=None, expr_hlayers_sizes='[10]', drug_hlayer
 
 
 def drug_dense_submodel(input_dim, hlayers_sizes='[10]', l1_regularization=0, l2_regularization=0,
-                        hidden_activation='relu', input_dropout=0, hidden_dropout=0):
+                        hidden_activation='relu', input_dropout=0, hidden_dropout=0, layerName='drug_dense_submodel'):
 	"""Build a dense (fully-connected) submodel for drugs, so that it can be used later on to share weights
 	between two drug subnetworks."""
 	input_layer = Input(shape=input_dim)
@@ -69,9 +100,13 @@ def drug_dense_submodel(input_dim, hlayers_sizes='[10]', l1_regularization=0, l2
 	output = dense_submodel(input_layer, hlayers_sizes, l1_regularization, l2_regularization,
 	                        hidden_activation, input_dropout, hidden_dropout)
 
-	submodel = Model(inputs=input_layer, outputs=output, name='drug_dense_submodel')
+	submodel = Model(inputs=input_layer, outputs=output, name=layerName)
 
 	return submodel
+
+
+
+
 
 
 def dense_submodel(input_layer, hlayers_sizes='[10]', l1_regularization=0, l2_regularization=0,
