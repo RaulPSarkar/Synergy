@@ -10,7 +10,7 @@ from src.mahalanobis import mahalanobisFunc
 warnings.filterwarnings(action='ignore',category=DeprecationWarning)
 warnings.filterwarnings(action='ignore',category=FutureWarning)
 from pathlib import Path
-
+from sklearn.preprocessing import MinMaxScaler
 
 ##########################
 ##########################
@@ -121,14 +121,20 @@ finalDF = []
 for outDF in splitOut:
     print("+1")
     df = crisprT.merge(outDF, on=['CELLNAME'])
-    df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax']]
+    df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax', 'Library IC50','Library Emax']]
     finalDF.append(df)
 
 
 df = pd.concat(finalDF, axis=0)
 df.drop_duplicates(inplace=True)
 
+scaler = MinMaxScaler()
+scaler.fit(df[['Library IC50']])
+df[['Library IC50']] = scaler.transform(df[['Library IC50']])
+scaler.fit(df[['Library Emax']])
+df[['Library Emax']] = scaler.transform(df[['Library Emax']])
 
+#minmax scale the single agent values since they're kinda big
 
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 

@@ -23,7 +23,7 @@ sys.path.append("..")
 
 
 
-def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
+def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
                           predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
                           l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
@@ -36,6 +36,9 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 	if(useDrugs):
 		drug1_input = Input(shape=drug_dim, name='drugA')
 		drug2_input = Input(shape=drug_dim, name='drugB')
+	if(useSingleAgent):
+		singleAgentInput = Input(shape=2, name='singleAgent')
+
 
 	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
 	                      hidden_activation=hidden_activation, input_dropout=input_dropout,
@@ -60,13 +63,23 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		coeffsA = coeffs_submodel(coeffs1_input)
 		coeffsB = coeffs_submodel(coeffs2_input)
 
+	fullConcat = [expr]
+	if(useCoeffs):
+		fullConcat.append(coeffsA)
+		fullConcat.append(coeffsB)
+	if(useDrugs):
+		fullConcat.append(drugA)
+		fullConcat.append(drugB)
+		
 
-	if(useCoeffs and useDrugs):
-		concat = concatenate([expr, coeffsA, coeffsB, drugA, drugB])
-	elif(useDrugs):
-		concat = concatenate([expr, drugA, drugB])
-	else:
-		concat = concatenate([expr, coeffsA, coeffsB])
+	concat = concatenate(fullConcat)
+	#if(useCoeffs and useDrugs):
+		#concat = concatenate([expr, coeffsA, coeffsB, drugA, drugB])
+	#elif(useDrugs):
+	#	concat = concatenate([expr, drugA, drugB])
+	#else:
+	#	concat = concatenate([expr, coeffsA, coeffsB])
+
 
 	# Additional dense layers after concatenating:
 	main_branch = dense_submodel(concat, hlayers_sizes=predictor_hlayers_sizes,
@@ -76,13 +89,25 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 	# Add output layer
 	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(main_branch)
 
-	# create Model object
-	if(useCoeffs and useDrugs):
-		model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input, drug1_input, drug2_input], outputs=[output])
-	elif(useDrugs):
-		model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
-	else:
-		model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input], outputs=[output])
+	
+	fullInputs = [expr_input]
+	if(useCoeffs):
+		fullInputs.append(coeffs1_input)
+		fullInputs.append(coeffs2_input)
+	if(useDrugs):
+		fullInputs.append(drug1_input)
+		fullInputs.append(drug2_input)
+	if(useSingleAgent):
+		fullInputs.append(singleAgentInput)
+		#fullInputs.append()
+	#if(useCoeffs and useDrugs):
+	model = Model(inputs=fullInputs, outputs=[output])
+
+		#model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input, drug1_input, drug2_input], outputs=[output])
+	#elif(useDrugs):
+	#model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
+	#else:
+	#	model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input], outputs=[output])
 		
 	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
 

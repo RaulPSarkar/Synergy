@@ -2,7 +2,7 @@ import pandas as pd
 import sys
 import numpy as np
 sys.path.append("..")
-from src.buildDLModel import buildDL
+
 from pathlib import Path
 from sklearn.model_selection import KFold, GroupShuffleSplit
 import os
@@ -24,7 +24,10 @@ from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.linear_model import Ridge
 import tensorflow as tf
+from src.buildDLModel import buildDL
 
+import matplotlib.pyplot as plt
+from sklearn import tree
 
 
 ##########################
@@ -33,13 +36,15 @@ import tensorflow as tf
 ###########PARAMETERS
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull
 crossValidationMode = 'regular' #drug, cell, regular
-tunerTrials = 13 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 99 #increase if you want to start the hyperparameter optimization process anew
+tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 98 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useTopMutatedList = True
-useCoeffs = False
-useDrugs = True
+useSingleAgentResponse = False #adds single agent data  
+useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
+useDrugs = True #adds drug data to model. irrelevant if using a dl model
+
 sizePrints = 1024
 
 
@@ -180,7 +185,7 @@ top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
 sizeOmics = 0 #auto updates
 sizeCoeffs = 0 #auto updates
 
-print(tf.config.list_physical_devices('GPU'))
+#print(tf.config.list_physical_devices('GPU'))
 print("Model selected: " + modelName)
 if (modelName.strip()=='dl'):
     useCoeffs = False
@@ -218,6 +223,7 @@ def buildModel(hp):
                 coeffs_dim= sizeCoeffs,
                 useCoeffs=True,
                 useDrugs=True,
+                useSingleAgent=useSingleAgentResponse,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -232,6 +238,7 @@ def buildModel(hp):
                 drug_dim = sizePrints,
                 useCoeffs=False,
                 useDrugs=True,
+                useSingleAgent=useSingleAgentResponse,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -245,6 +252,7 @@ def buildModel(hp):
                 coeffs_dim= sizeCoeffs,
                 useCoeffs=True,
                 useDrugs=False,
+                useSingleAgent=useSingleAgentResponse,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -285,9 +293,12 @@ def buildModel(hp):
     elif(use=='lgbm'):
         #hyperparameters taken from https://lightgbm.readthedocs.io/en/latest/Parameters-Tuning.html
         model = MultiOutputRegressor ( LGBMRegressor(
-            n_estimators=hp.Int('n_estimators', 100, 1000),
+            #n_estimators=hp.Int('n_estimators', 100, 1000),
+            n_estimators=hp.Int('n_estimators', 100, 3000),
+            #learning_rate = hp.Float('learning_rate', 1e-4, 1e-1, sampling="log"), #1e-3
             learning_rate = hp.Float('learning_rate', 1e-4, 1e-1, sampling="log"), #1e-3
-            max_depth = hp.Int('max_depth', 3, 9),
+            #max_depth = hp.Int('max_depth', 3, 9),
+            max_depth = hp.Int('max_depth', 3, 11),
             min_child_weight = hp.Int('min_child_weight', 1, 5),
             min_split_gain = hp.Float('min_split_gain', 0, 2), #1e-3
             subsample = hp.Float('subsample', 0.6, 1.0), #1e-3
@@ -397,10 +408,18 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
+singleAgentDF = X.loc[:, ['Library IC50','Library Emax']]
+
+if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull')   ):
+    X = X.drop(['Library IC50','Library Emax'], axis=1)
+    #I'm deleting these columns case it's a DL model, to make selecting each DF from X easier up ahead.
+    #This is why I created singleAgentDF earlier
+    
+
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 #make this a function maybe
 
-print(X)
+#print(X)
 #print(X.columns.to_list()) - Just to make sure everything was okay, which it was
 
 #hyperparam tuning
@@ -459,17 +478,25 @@ for train_index , test_index in splits:
         if(useDrugs):
             AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
             BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
+        if(useSingleAgentResponse):
+            singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
 
-        if(useCoeffs and useDrugs):
-            XTrain = [omicsDFTrain, AcoeffsDFTrain, BcoeffsDFTrain, AfingerDFTrain, BfingerDFTrain]
-            XTest = [omicsDFTest, AcoeffsDFTest, BcoeffsDFTest, AfingerDFTest, BfingerDFTest]
-        elif(useDrugs):
-            XTrain = [omicsDFTrain, AfingerDFTrain, BfingerDFTrain]
-            XTest = [omicsDFTest, AfingerDFTest, BfingerDFTest]
-        else:
-            XTrain = [omicsDFTrain, AcoeffsDFTrain, BcoeffsDFTrain]
-            XTest = [omicsDFTest, AcoeffsDFTest, BcoeffsDFTest]
+        XTrain = [omicsDFTrain]
+        XTest = [omicsDFTest]
 
+        if(useCoeffs):
+            XTrain.append(AcoeffsDFTrain)
+            XTrain.append(BcoeffsDFTrain)
+            XTest.append(AcoeffsDFTest)
+            XTest.append(BcoeffsDFTest)
+        if(useDrugs):
+            XTrain.append(AfingerDFTrain)
+            XTrain.append(BfingerDFTrain)
+            XTest.append(AfingerDFTest)
+            XTest.append(BfingerDFTest)
+        if(useSingleAgentResponse):
+            XTrain.append(singleAgentDFTrain)
+            XTest.append(singleAgentDFTest)
 
 
     if(modelName!='base'):
@@ -490,6 +517,7 @@ for train_index , test_index in splits:
                 cv=model_selection.KFold(5),
                 directory= fullTunerDirectory,
                 project_name= runStringCV)
+
 
             
 
@@ -537,9 +565,25 @@ for train_index , test_index in splits:
             #print(model.estimators_[0].coef_ )
             ypred = model.predict(X_test)
 
+            #copied from https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
+            if(modelName=='rf'):
+                for i in range(3):
+                    fn=X.columns
+                    cn=y.columns
+                    fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (40,40), dpi=1600)
+                    tree.plot_tree(model.estimators_[0],
+                                feature_names = fn, 
+                                class_names=cn,
+                                filled = True,
+                                fontsize=10)
+                    name = 'rfNew' + str(i) + '.png'
+                    fig.savefig(name)
+
+
         else:
             #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
-            #(After tuning optimal HPs, fit the data) https://www.tensorflow.org/tutorials/keras/keras_tuner
+            #(After tuning optimal HPs, fit the data) 
+            #https://www.tensorflow.org/tutorials/keras/keras_tuner
             ######################################################
             ######################################################
             bestHP = tuner.get_best_hyperparameters(1)[0]
@@ -598,9 +642,18 @@ for train_index , test_index in splits:
     index+=1
     fullPredictions.append(df)
 
+emptyString = ''
+if(useSingleAgentResponse):
+    emptyString = 'plusSingle'
+
+if(useCoeffs):
+    emptyString += 'plusCoeffs'
+if(useDrugs):
+    emptyString += 'plusDrugs'
+
 
 totalPreds = pd.concat(fullPredictions, axis=0)
-finalName = modelName + runString + '.csv'
+finalName = modelName + runString + crossValidationMode + emptyString + '.csv'
 finalHPName = modelName + runString + 'hyperParams.csv'
 
 outdir = outputPredictions / 'final' / modelName

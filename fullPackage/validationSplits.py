@@ -12,3 +12,7 @@ from sklearn.model_selection import KFold
 #check predictions on latest thing
 
 #also, make tuner trials actually matter for DL
+
+#visualizing trees https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
+
+#https://stackoverflow.com/questions/71817783/pandas-plot-stacked-and-unstacked-bar

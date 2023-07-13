@@ -34,11 +34,22 @@ def barplot(df, saveFolder, type='gdsc'):
 
     elif(type=='gdsc'):
 
+ 
+
+
+        ax1 = plt.subplot(1, 2, 1)
+        
         splot =sns.barplot(x='name',y='R2 IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=36,label_type='center')
         plt.ylabel("R\u00b2 ΔIC50", size=36)
+        
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -51,12 +62,19 @@ def barplot(df, saveFolder, type='gdsc'):
 
 
 
-
+        ax1 = plt.subplot(1, 2, 1)
         splot=sns.barplot(x='name',y='R2 Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=36,label_type='center')
         plt.ylabel("R\u00b2 ΔEmax", size=36)
+
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
+
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -67,11 +85,18 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.savefig(saveFolder / 'barPlots' / fileName)
         plt.close()
 
+        ax1 = plt.subplot(1, 2, 1)
         splot=sns.barplot(x='name',y='Spearman IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=36,label_type='center')
         plt.ylabel("Spearman's rho ΔIC50", size=36)
+
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -82,11 +107,19 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.savefig(saveFolder / 'barPlots' / fileName)
         plt.close()
 
+        ax1 = plt.subplot(1, 2, 1)
         splot=sns.barplot(x='name',y='Spearman Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=36,label_type='center')
         plt.ylabel("Spearman's rho ΔEmax", size=36)
+
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
+
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -97,11 +130,18 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.savefig(saveFolder / 'barPlots' / fileName)
         plt.close()
 
+        ax1 = plt.subplot(1, 2, 1)
         splot=sns.barplot(x='name',y='MSE IC50',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=36,label_type='center')
         plt.ylabel("MSE ΔIC50", size=36)
+
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -112,11 +152,18 @@ def barplot(df, saveFolder, type='gdsc'):
         plt.savefig(saveFolder / 'barPlots' / fileName)
         plt.close()
 
+        ax1 = plt.subplot(1, 2, 1)
         splot=sns.barplot(x='name',y='MSE Emax',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.bar_label(splot.containers[0], size=26,label_type='center')
         plt.ylabel("MSE ΔEmax", size=36)
+
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
 
         #to save in fullscreen
         figure = plt.gcf()
@@ -189,3 +236,22 @@ def regressionGraphs(df, modelName, dfStats, saveGraphsFolder):
         os.mkdir(saveGraphsFolder / 'Emax')
     plt.savefig(saveGraphsFolder / 'Emax' / fileName)
     plt.close()
+
+
+def stackedbarplot(df, saveGraphsFolder, metricName):
+    barlist = df.set_index('Model').plot(kind='bar', stacked=True, color=['steelblue', 'red'])
+    figure = plt.gcf()
+
+    figure.set_size_inches(32, 18)
+    matplotlib.rc('font', size=25)
+    matplotlib.rc('axes', titlesize=25)
+    plt.xlabel("Model", size=36)
+    plt.title('Model Performance', size=44)
+    plt.ylabel(metricName, size=36)
+
+    fileName = 'stackedBar' + metricName + '.png'
+    if not os.path.exists(saveGraphsFolder / 'IC50'):
+        os.mkdir(saveGraphsFolder / 'IC50')
+    plt.savefig(saveGraphsFolder / 'IC50' / fileName)
+    plt.close()
+
