@@ -36,7 +36,7 @@ from sklearn import tree
 ###########PARAMETERS
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull
 crossValidationMode = 'regular' #drug, cell, regular
-tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
+tunerTrials = 27 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 98 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3

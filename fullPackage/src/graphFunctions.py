@@ -239,15 +239,16 @@ def regressionGraphs(df, modelName, dfStats, saveGraphsFolder):
 
 
 def stackedbarplot(df, saveGraphsFolder, metricName):
-    barlist = df.set_index('Model').plot(kind='bar', stacked=True, color=['steelblue', 'red'])
-    figure = plt.gcf()
-
-    figure.set_size_inches(32, 18)
+    
     matplotlib.rc('font', size=25)
     matplotlib.rc('axes', titlesize=25)
     plt.xlabel("Model", size=36)
     plt.title('Model Performance', size=44)
     plt.ylabel(metricName, size=36)
+
+    barlist = df.set_index('Model').plot(kind='bar', stacked=True)
+    figure = plt.gcf()
+    figure.set_size_inches(32, 18)
 
     fileName = 'stackedBar' + metricName + '.png'
     if not os.path.exists(saveGraphsFolder / 'IC50'):
