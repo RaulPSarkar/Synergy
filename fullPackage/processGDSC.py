@@ -139,28 +139,22 @@ df[['Library Emax']] = scaler.transform(df[['Library Emax']])
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 
 
+#THIS DIDN'T WORK (TO ADD ANCHOR SINGLE AGENT VALUES)
+#singleAgent = dfSuperFinal.groupby(['NSC1', 'CELLNAME']).mean().reset_index()
+#singleAgent = singleAgent[['NSC1', 'CELLNAME', 'Library IC50']]
+#actuallySuperFinalDF = pd.merge(dfSuperFinal, singleAgent, left_on=['NSC1', 'CELLNAME', 'Library IC50'], right_on = ['NSC1', 'CELLNAME', 'Library IC50'])
+#merging on multiple columns, taken from https://stackoverflow.com/questions/41815079/pandas-merge-join-two-data-frames-on-multiple-columns
+#print(dfSuperFinal)
+#print(actuallySuperFinalDF)
+
+
+
+
+
+
+
 dfSuperFinal['Experiment'] = dfSuperFinal.index #this is used as index to reorganize later
 dfSuperFinal = dfSuperFinal.sample(frac=1)
-
-
-
-#coeffs = Path(__file__).parent / 'datasets/CoefficientsLasso.csv'
-#coeffs = pd.read_csv(coeffs, index_col=0)
-#coeffs = coeffs[coeffs['features'] != '(Intercept)']
-#coeffs = coeffs.drop(['Drug_id'], axis=1)
-#coeffs = coeffs.drop_duplicates(subset=['Drug_name','features'])
-#coeffs = pd.pivot(coeffs, index='features', columns='Drug_name', values='EN_coef')
-#outputFile = Path(__file__).parent / "datasets/coefsProcessed.csv"
-#df.to_csv(outputFile)
-#obtain all the drugs, and merge
-
-#coeffs = coeffs.T
-#coeffs['drug'] = coeffs.index
-#coeffs['drug'] = coeffs.index
-
-#listOfDrugs = coeffs.columns
-#listOfDrugs = listOfDrugs.drop_duplicates().to_list()
-#dfSuperFinal = dfSuperFinal[dfSuperFinal['NSC1'].isin(listOfDrugs)]
 
 
 

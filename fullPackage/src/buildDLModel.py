@@ -22,13 +22,57 @@ sys.path.append("..")
 
 
 
+def buildNewDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
+                          predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
+                          l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 
-def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
+
+	expr_input = Input(shape=expr_dim, name='expr')
+
+	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
+	                      hidden_activation=hidden_activation, input_dropout=input_dropout,
+	                      hidden_dropout=hidden_dropout)
+	
+
+	
+
+	singleAgentInput = Input(shape=2, name='singleAgent')
+
+	concat = concatenate(fullConcat)
+	# Additional dense layers after concatenating:
+	main_branch = dense_submodel(concat, hlayers_sizes=predictor_hlayers_sizes,
+	                             l1_regularization=l1, l2_regularization=l2,
+	                             hidden_activation=hidden_activation, input_dropout=0,
+	                             hidden_dropout=hidden_dropout)
+
+
+	fullInputs = [expr_input, singleAgentInput]
+
+	# Add output layer
+	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(expr)
+
+
+	model = Model(inputs=fullInputs, outputs=[output])
+
+	
+	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
+
+
+	return model
+
+
+
+
+def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, mixedModel=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
                           predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
                           l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
 	and drugB, with fully-connected layers in all subnetworks."""
 	
+	if(mixedModel):
+		useCoeffs=False
+
+
 	expr_input = Input(shape=expr_dim, name='expr')
 	if(useCoeffs):
 		coeffs1_input = Input(shape=coeffs_dim, name='coeffsA')

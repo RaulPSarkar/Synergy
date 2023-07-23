@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.linear_model import Ridge
 import tensorflow as tf
-from src.buildDLModel import buildDL
+from src.buildDLModel import buildDL, buildNewDL
 
 import matplotlib.pyplot as plt
 from sklearn import tree
@@ -34,16 +34,21 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull
+modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
-tunerTrials = 27 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 98 #increase if you want to start the hyperparameter optimization process anew
+tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
+tunerRun = 7 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
-useTopMutatedList = True
+useTopMutatedList = False
+useCancerDrivers = True #whether to use cancer driver genes for coefficient branch
 useSingleAgentResponse = False #adds single agent data  
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
-useDrugs = True #adds drug data to model. irrelevant if using a dl model
+useDrugs = False #adds drug data to model. irrelevant if using a dl model
+sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
+#doesn't work with DL models
+sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #trains the model with each of
+#the small fractions of the full dataset (WITH resampling), and saves each result
 
 sizePrints = 1024
 
@@ -55,6 +60,7 @@ fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 #fingerprints = Path(__file__).parent / 'datasets/smiles2shuffledfingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 top3000MutatedList = Path(__file__).parent / 'datasets/top15mutatedgenes.tsv'
+cancerDriverGenes = Path(__file__).parent / 'datasets/cancerDriverGenes.csv'
 outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 #tunerDirectory = Path('W:\Media') / 'tuner'
@@ -180,10 +186,8 @@ crossValidationMode = args.crossValidationMode
 coeffs = args.coeffs
 
 top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
+cancerDriverGenes = pd.read_csv(cancerDriverGenes)
 
-
-sizeOmics = 0 #auto updates
-sizeCoeffs = 0 #auto updates
 
 #print(tf.config.list_physical_devices('GPU'))
 print("Model selected: " + modelName)
@@ -196,6 +200,10 @@ elif(modelName.strip()=='dlCoeffs'):
 elif(modelName.strip()=='dlFull'):
     useCoeffs = True
     useDrugs = True
+elif(modelName.strip()=='dlMixed'):
+    useCoeffs = True
+    #useDrugs = False
+    #why not?
 
 if not os.path.exists(outputPredictions):
     os.mkdir(outputPredictions)
@@ -232,7 +240,22 @@ def buildModel(hp):
                 l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
                 hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
                 learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
-        
+    
+
+    elif(use=='dlMixed'):
+        model = buildDL(expr_dim = sizeOmics, 
+                drug_dim = sizePrints,
+                useSingleAgent=useSingleAgentResponse,
+                mixedModel=True,
+                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
+                l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
+                hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
+                learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
+
+
     elif(use=='dl'):
         model = buildDL(expr_dim = sizeOmics, 
                 drug_dim = sizePrints,
@@ -334,7 +357,7 @@ def datasetToInput(data, omics, drugs, coeffs):
     for gene in landmarkList['pr_gene_symbol']:
         if gene in omics.T.columns:
             interceptionGenes.append(gene)
-            if(not useTopMutatedList):
+            if( (not useTopMutatedList) and (not useCancerDrivers)):
                 if gene in coeffs.index:
                     interceptionCoeffs.append(gene)
     
@@ -342,8 +365,18 @@ def datasetToInput(data, omics, drugs, coeffs):
         for gene in top3000MutatedList['Gene']:
             if gene in coeffs.index:
                 interceptionCoeffs.append(gene)
+    
+    count = 0
+    if(useCancerDrivers):
+        
+        for gene in cancerDriverGenes['symbol']:
+            if gene in coeffs.index:
+                count+= 1
+                interceptionCoeffs.append(gene)
 
-    print(interceptionCoeffs)
+    print(count)
+    
+
 
     omicsFinal = omics.T[  interceptionGenes  ]
     coeffsFinal = coeffs.T[interceptionCoeffs]
@@ -410,7 +443,7 @@ X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid'
 
 singleAgentDF = X.loc[:, ['Library IC50','Library Emax']]
 
-if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull')   ):
+if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlMixed')   ):
     X = X.drop(['Library IC50','Library Emax'], axis=1)
     #I'm deleting these columns case it's a DL model, to make selecting each DF from X easier up ahead.
     #This is why I created singleAgentDF earlier
@@ -427,18 +460,8 @@ runString = 'run' + str(tunerRun)
 
 
 
-#cross validation
-if(crossValidationMode=='drug'):
-    gs = GroupShuffleSplit(n_splits=kFold)
-    splits = gs.split(X, y, groupDrugs)
-elif(crossValidationMode=='cell'):
-    gs = GroupShuffleSplit(n_splits=kFold)
-    splits = gs.split(X, y, groupCell)
-else:
-    kf = KFold(n_splits=kFold, shuffle=True)
-    splits = kf.split(X)
 
-if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull'):
+if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlMixed'):
     ind = 0
     omicsDF = X.iloc[:, ind: ind+sizeOmics]
     ind += sizeOmics
@@ -454,217 +477,315 @@ if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull'):
         ind += sizePrints
         BfingerDF = X.iloc[:, ind: ind+sizePrints]
 
-
-fullPredictions = []
-index = 0
-
-superFinalHyperDF = []
-
-
-for train_index , test_index in splits:
-    suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
-    y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
-
-    if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull'):
-        X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
-    else:
-
-        omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
-
-        if(useCoeffs):
-            AcoeffsDFTrain, AcoeffsDFTest = AcoeffsDF.iloc[train_index,:],AcoeffsDF.iloc[test_index,:]
-            BcoeffsDFTrain, BcoeffsDFTest = BcoeffsDF.iloc[train_index,:],BcoeffsDF.iloc[test_index,:]
-
-        if(useDrugs):
-            AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
-            BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
-        if(useSingleAgentResponse):
-            singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
-
-        XTrain = [omicsDFTrain]
-        XTest = [omicsDFTest]
-
-        if(useCoeffs):
-            XTrain.append(AcoeffsDFTrain)
-            XTrain.append(BcoeffsDFTrain)
-            XTest.append(AcoeffsDFTest)
-            XTest.append(BcoeffsDFTest)
-        if(useDrugs):
-            XTrain.append(AfingerDFTrain)
-            XTrain.append(BfingerDFTrain)
-            XTest.append(AfingerDFTest)
-            XTest.append(BfingerDFTest)
-        if(useSingleAgentResponse):
-            XTrain.append(singleAgentDFTrain)
-            XTest.append(singleAgentDFTest)
-
-
-    if(modelName!='base'):
+if(modelName=='dlMixed'):
     
-        fullTunerDirectory = tunerDirectory / modelName
+    omicsDFB = omicsDF.add_suffix('Blist')
+    omicsDFA = omicsDF.add_suffix('Alist')
 
-        runStringCV = runString + 'fold' + str(index)
+    #i am so goddamn lazy, don't copy paste like this
+    interceptionGenes = []
+    for gene in omicsDFA.columns:
+        if gene in AcoeffsDF.columns:
+            interceptionGenes.append(gene)
 
-        hyperList = []
+    #this is even worse, but technically it works
+    interceptionGenesB = []
+    
+    for gene in omicsDFB.columns:
+        if gene in BcoeffsDF.columns:
+            interceptionGenesB.append(gene)
 
-        if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull'):
-            tuner = keras_tuner.tuners.SklearnTuner(
-                oracle=keras_tuner.oracles.BayesianOptimizationOracle(
-                    objective=keras_tuner.Objective('score', 'min'),
-                    max_trials=tunerTrials),
-                hypermodel=buildModel,
-                scoring=metrics.make_scorer(metrics.mean_squared_error),
-                cv=model_selection.KFold(5),
-                directory= fullTunerDirectory,
-                project_name= runStringCV)
+    omicsDF=omicsDFA[interceptionGenes]
+    AcoeffsDF=AcoeffsDF[interceptionGenes]
+    BcoeffsDF=BcoeffsDF[interceptionGenesB]
+
+
+    AcoeffsDF = 1 - AcoeffsDF
+    BcoeffsDF = 1 - BcoeffsDF
+
+    AcoeffsDF.columns = omicsDF.columns
+    BcoeffsDF.columns = omicsDF.columns
+
+    omicsModifiedInput = omicsDF * AcoeffsDF * BcoeffsDF
+    sizeOmics = len(omicsModifiedInput.columns)
+
+
+def trainTestModel(sens=False, sensRun=0):
+
+        #cross validation
+    if(crossValidationMode=='drug'):
+        gs = GroupShuffleSplit(n_splits=kFold)
+        splits = gs.split(X, y, groupDrugs)
+    elif(crossValidationMode=='cell'):
+        gs = GroupShuffleSplit(n_splits=kFold)
+        splits = gs.split(X, y, groupCell)
+    else:
+        kf = KFold(n_splits=kFold, shuffle=True)
+        splits = kf.split(X)
+
+    fullPredictions = []
+    index = 0
+
+    superFinalHyperDF = []
+
+
+    for train_index , test_index in splits:
+        if(sens and index>0):
+            break
+        #just do a single fold for sensitivity analysis
+
+        suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
+        y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
+
+        if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+            X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
+        else:
+
+            if(modelName!='dlMixed'):
+
+                omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
+
+                if(useCoeffs):
+                    AcoeffsDFTrain, AcoeffsDFTest = AcoeffsDF.iloc[train_index,:],AcoeffsDF.iloc[test_index,:]
+                    BcoeffsDFTrain, BcoeffsDFTest = BcoeffsDF.iloc[train_index,:],BcoeffsDF.iloc[test_index,:]
+
+                if(useDrugs):
+                    AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
+                    BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
+                if(useSingleAgentResponse):
+                    singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
+
+                XTrain = [omicsDFTrain]
+                XTest = [omicsDFTest]
+
+                if(useCoeffs):
+                    XTrain.append(AcoeffsDFTrain)
+                    XTrain.append(BcoeffsDFTrain)
+                    XTest.append(AcoeffsDFTest)
+                    XTest.append(BcoeffsDFTest)
+                if(useDrugs):
+                    XTrain.append(AfingerDFTrain)
+                    XTrain.append(BfingerDFTrain)
+                    XTest.append(AfingerDFTest)
+                    XTest.append(BfingerDFTest)
+                if(useSingleAgentResponse):
+                    XTrain.append(singleAgentDFTrain)
+                    XTest.append(singleAgentDFTest)
+
+            else:
+                singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
+                omicsDFTrain, omicsDFTest = omicsModifiedInput.iloc[train_index,:],omicsModifiedInput.iloc[test_index,:]
+                if(useDrugs):
+                    AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
+                    BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
+
+                XTrain = [omicsDFTrain]
+                XTest = [omicsDFTest]
+
+                if(useDrugs):
+                    XTrain.append(AfingerDFTrain)
+                    XTrain.append(BfingerDFTrain)
+                    XTest.append(AfingerDFTest)
+                    XTest.append(BfingerDFTest)
+
+                XTrain.append(singleAgentDFTrain)
+                XTest.append(singleAgentDFTest)
+
+                
+
+        if(modelName!='base'):
+        
+            fullTunerDirectory = tunerDirectory / modelName
+
+            runStringCV = runString + 'fold' + str(index)
+            if(sens):
+                runStringCV = runString + 'size' + str(sensRun)
+
+
+            hyperList = []
+
+            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+                tuner = keras_tuner.tuners.SklearnTuner(
+                    oracle=keras_tuner.oracles.BayesianOptimizationOracle(
+                        objective=keras_tuner.Objective('score', 'min'),
+                        max_trials=tunerTrials),
+                    hypermodel=buildModel,
+                    scoring=metrics.make_scorer(metrics.mean_squared_error),
+                    cv=model_selection.KFold(5),
+                    directory= fullTunerDirectory,
+                    project_name= runStringCV)
+
+
+                
+                tuner.search(X_train, y_train.to_numpy())
+                best_hp = tuner.get_best_hyperparameters()[0]
+                #technically, no need to grab best HPs anymore because it's already fitted to training dataset
+                #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
+            else:
+                tuner = keras_tuner.Hyperband(
+                buildModel,
+                max_epochs=30,
+                objective='val_loss',
+                executions_per_trial=1,
+                directory=fullTunerDirectory,
+                project_name=runStringCV
+                )    
+
+
+                tuner.search(x=XTrain,
+                        y=y_train,
+                        epochs=30,
+                        validation_split=0.2)
+
 
 
             
 
-            tuner.search(X_train, y_train.to_numpy())
-            best_hp = tuner.get_best_hyperparameters()[0]
-            #technically, no need to grab best HPs anymore because it's already fitted to training dataset
-            #however, it's not a fully trained model on all the data: https://keras.io/api/keras_tuner/tuners/base_tuner/
-        else:
-            tuner = keras_tuner.Hyperband(
-            buildModel,
-            max_epochs=30,
-            objective='val_loss',
-            executions_per_trial=1,
-            directory=fullTunerDirectory,
-            project_name=runStringCV
-            )    
-
-
-            tuner.search(x=XTrain,
-                    y=y_train,
-                    epochs=30,
-                    validation_split=0.2)
-
-
+            for hyper in range (saveTopXHyperparametersPerFold):
+                best_hpIter = tuner.get_best_hyperparameters(saveTopXHyperparametersPerFold)[hyper]
+                bestValsDict = best_hpIter.values
+                bestValsDict = {k:[v] for k,v in bestValsDict.items()} #taken from https://stackoverflow.com/questions/57631895/dictionary-to-dataframe-error-if-using-all-scalar-values-you-must-pass-an-ind
+                bestHyperDF = pd.DataFrame.from_dict(bestValsDict)
+                bestHyperDF['fold'] = index+1
+                bestHyperDF['rank'] = hyper+1
+                hyperList.append(bestHyperDF)
+            
+            finalHyperDF = pd.concat(hyperList, axis=0)
+            superFinalHyperDF.append(finalHyperDF)
 
         
+        if(modelName!='base'):
+            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+                model = buildModel(best_hp)
+                model.fit(X_train, y_train)
+                #print(model.estimators_[0].coef_ )
+                ypred = model.predict(X_test)
 
-        for hyper in range (saveTopXHyperparametersPerFold):
-            best_hpIter = tuner.get_best_hyperparameters(saveTopXHyperparametersPerFold)[hyper]
-            bestValsDict = best_hpIter.values
-            bestValsDict = {k:[v] for k,v in bestValsDict.items()} #taken from https://stackoverflow.com/questions/57631895/dictionary-to-dataframe-error-if-using-all-scalar-values-you-must-pass-an-ind
-            bestHyperDF = pd.DataFrame.from_dict(bestValsDict)
-            bestHyperDF['fold'] = index+1
-            bestHyperDF['rank'] = hyper+1
-            hyperList.append(bestHyperDF)
-        
-        finalHyperDF = pd.concat(hyperList, axis=0)
-        superFinalHyperDF.append(finalHyperDF)
+                #copied from https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
+                #if(modelName=='rf'):
+                #    for i in range(3):
+                #        fn=X.columns
+                #        cn=y.columns
+                #        fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (40,40), dpi=1600)
+                #        tree.plot_tree(model.estimators_[0],
+                #                    feature_names = fn, 
+                #                    class_names=cn,
+                #                    filled = True,
+                #                    fontsize=10)
+                #        name = 'rfNew' + str(i) + '.png'
+                #        fig.savefig(name)
 
-    
-    if(modelName!='base'):
-        if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull'):
-            model = buildModel(best_hp)
-            model.fit(X_train, y_train)
-            #print(model.estimators_[0].coef_ )
-            ypred = model.predict(X_test)
 
-            #copied from https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
-            if(modelName=='rf'):
-                for i in range(3):
-                    fn=X.columns
-                    cn=y.columns
-                    fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (40,40), dpi=1600)
-                    tree.plot_tree(model.estimators_[0],
-                                feature_names = fn, 
-                                class_names=cn,
-                                filled = True,
-                                fontsize=10)
-                    name = 'rfNew' + str(i) + '.png'
-                    fig.savefig(name)
+            else:
+                #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
+                #(After tuning optimal HPs, fit the data) 
+                #https://www.tensorflow.org/tutorials/keras/keras_tuner
+                ######################################################
+                ######################################################
+                bestHP = tuner.get_best_hyperparameters(1)[0]
 
+                # Build the model with the optimal hyperparameters and train it on the data for 65 epochs
+                model = tuner.hypermodel.build(bestHP)
+                history = model.fit(XTrain, y_train, epochs=65, validation_split=0.2)
+
+                valLossPerEpoch = history.history['val_loss']
+                bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
+                print('Best epoch: %d' % (bestEpoch,))
+                hypermodel = tuner.hypermodel.build(bestHP)
+                # Retrain the model -> i could just save the model instead maybe?
+                hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
+                #####################################################
+                ######################################################
+                ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
+
+
+
+            df = pd.DataFrame(data={'Experiment': suppTest['Experiment'].values,
+                            'Cellname': suppTest['CELLNAME'].values,
+                            'Library': suppTest['NSC1'].values,
+                            'Anchor': suppTest['NSC2'].values,
+                            'Tissue': suppTest['Tissue'].values,
+                            'Conc': suppTest['Anchor Conc'].values,
+                            'y_trueIC': y_test.iloc[:,0].values,
+                            'y_trueEmax': y_test.iloc[:,1].values,
+                            'y_predIC': ypred[:,0],
+                            'y_predEmax': ypred[:,1]})
 
         else:
-            #THIS PART WAS JUST COPIED FROM THE OFFICIAL KERAS DOCS
-            #(After tuning optimal HPs, fit the data) 
-            #https://www.tensorflow.org/tutorials/keras/keras_tuner
-            ######################################################
-            ######################################################
-            bestHP = tuner.get_best_hyperparameters(1)[0]
+            dataTrain = data.iloc[train_index,:]
+            dataTest = data.iloc[test_index,:]
+            meanScores = dataTrain.groupby(['NSC1', 'NSC2'])['Delta Xmid', 'Delta Emax'].mean()
 
-            # Build the model with the optimal hyperparameters and train it on the data for 65 epochs
-            model = tuner.hypermodel.build(bestHP)
-            history = model.fit(XTrain, y_train, epochs=65, validation_split=0.2)
+            predictedTest = dataTest.merge(meanScores, on=['NSC1', 'NSC2'])
 
-            valLossPerEpoch = history.history['val_loss']
-            bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
-            print('Best epoch: %d' % (bestEpoch,))
-            hypermodel = tuner.hypermodel.build(bestHP)
-            # Retrain the model -> i could just save the model instead maybe?
-            hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
-            #####################################################
-            ######################################################
-            ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
+            df = pd.DataFrame(data={
+                                'Experiment': predictedTest['Experiment'],
+                                'Cellname': predictedTest['CELLNAME'],
+                                'Library': predictedTest['NSC1'],
+                                'Anchor': predictedTest['NSC2'],
+                                'Tissue': predictedTest['Tissue'],
+                                'Conc': predictedTest['Anchor Conc'],
+                                'y_trueIC': predictedTest['Delta Xmid_x'],
+                                'y_predIC': predictedTest['Delta Xmid_y'],
+                                'y_trueEmax': predictedTest['Delta Emax_x'],
+                                'y_predEmax': predictedTest['Delta Emax_y']
 
+                                })
 
 
-        df = pd.DataFrame(data={'Experiment': suppTest['Experiment'],
-                        'Cellname': suppTest['CELLNAME'],
-                        'Library': suppTest['NSC1'],
-                        'Anchor': suppTest['NSC2'],
-                        'Tissue': suppTest['Tissue'],
-                        'Conc': suppTest['Anchor Conc'],
-                        'y_trueIC': y_test.iloc[:,0],
-                        'y_trueEmax': y_test.iloc[:,1],
-                        'y_predIC': ypred[:,0],
-                        'y_predEmax': ypred[:,1]})
+        saveTo = modelName + str(index) + '.csv'
+        df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
+        index+=1
+        fullPredictions.append(df)
 
-    else:
-        dataTrain = data.iloc[train_index,:]
-        dataTest = data.iloc[test_index,:]
-        meanScores = dataTrain.groupby(['NSC1', 'NSC2'])['Delta Xmid', 'Delta Emax'].mean()
+    emptyString = ''
+    if(useSingleAgentResponse):
+        emptyString = 'plusSingle'
 
-        predictedTest = dataTest.merge(meanScores, on=['NSC1', 'NSC2'])
-
-        df = pd.DataFrame(data={
-                            'Experiment': predictedTest['Experiment'],
-                            'Cellname': predictedTest['CELLNAME'],
-                            'Library': predictedTest['NSC1'],
-                            'Anchor': predictedTest['NSC2'],
-                            'Tissue': predictedTest['Tissue'],
-                            'Conc': predictedTest['Anchor Conc'],
-                            'y_trueIC': predictedTest['Delta Xmid_x'],
-                            'y_predIC': predictedTest['Delta Xmid_y'],
-                            'y_trueEmax': predictedTest['Delta Emax_x'],
-                            'y_predEmax': predictedTest['Delta Emax_y']
-
-                            })
+    if(useCoeffs):
+        emptyString += 'plusCoeffs'
+    if(useDrugs):
+        emptyString += 'plusDrugs'
 
 
-    saveTo = modelName + str(index) + '.csv'
-    df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
-    index+=1
-    fullPredictions.append(df)
+    totalPreds = pd.concat(fullPredictions, axis=0)
 
-emptyString = ''
-if(useSingleAgentResponse):
-    emptyString = 'plusSingle'
+    finalName = modelName + runString + crossValidationMode + emptyString + '.csv'
+    finalHPName = modelName + runString + 'hyperParams.csv'
 
-if(useCoeffs):
-    emptyString += 'plusCoeffs'
-if(useDrugs):
-    emptyString += 'plusDrugs'
+    if(sens): 
+        finalName = modelName + runString + str(sensRun) + crossValidationMode + emptyString + '.csv'
+        finalHPName = modelName + runString + str(sensRun) + 'hyperParams.csv'
 
 
-totalPreds = pd.concat(fullPredictions, axis=0)
-finalName = modelName + runString + crossValidationMode + emptyString + '.csv'
-finalHPName = modelName + runString + 'hyperParams.csv'
-
-outdir = outputPredictions / 'final' / modelName
-if not os.path.exists(outdir):
-    os.mkdir(outdir)
+    outdir = outputPredictions / 'final' / modelName
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 
 
 
-totalPreds.to_csv(outdir / finalName, index=False)
-superFinalHyperDF = pd.concat(superFinalHyperDF, axis=0)
-superFinalHyperDF.to_csv(outdir / finalHPName, index=False)
+    totalPreds.to_csv(outdir / finalName, index=False)
+    superFinalHyperDF = pd.concat(superFinalHyperDF, axis=0)
+    superFinalHyperDF.to_csv(outdir / finalHPName, index=False)
 
-print("Best HP values:")
-print(superFinalHyperDF)
+    print("Best HP values:")
+    print(superFinalHyperDF)
+
+if(sensitivityAnalysisMode):
+    originalX = X
+    originalY = y
+    ind = 0
+    fullDF = pd.concat([originalY,originalX], axis=1)
+
+    for sampleSize in sensitivitySizeFractions:
+        sampledDF = fullDF.sample(frac=sampleSize, random_state=1)
+        y = sampledDF.iloc[:, :2]
+        X = sampledDF.iloc[:, 2:]
+        print(y)
+        print(X)
+        #X = originalX.sample(frac=sampleSize, random_state=1) 
+        #y = originalY.sample(frac=sampleSize, random_state=1)
+        trainTestModel(sens=True, sensRun=ind)
+        ind += 1
+else:
+    trainTestModel()
