@@ -34,17 +34,18 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlMixed
+modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 7 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 100 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
+useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
 useLandmarkForCoefficients = False #whether to use landmark cancer genes for coefficient branch
 useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for coefficient branch
 useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
 useSingleAgentResponse = True #adds single agent data  
-useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
+useCoeffs = False #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
@@ -248,6 +249,7 @@ def buildModel(hp):
                 drug_dim = sizePrints,
                 useSingleAgent=useSingleAgentResponse,
                 mixedModel=True,
+                useDrugs=useDrugs,
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -356,11 +358,12 @@ def datasetToInput(data, omics, drugs, coeffs):
 
 
     for gene in landmarkList['pr_gene_symbol']:
-        if gene in omics.T.columns:
-            interceptionGenes.append(gene)
-            if(useLandmarkForCoefficients):
-                if gene in coeffs.index:
-                    interceptionCoeffs.append(gene)
+        if(useLandmarkForOmics):
+            if gene in omics.T.columns:
+                interceptionGenes.append(gene)
+        if(useLandmarkForCoefficients):
+            if gene in coeffs.index:
+                interceptionCoeffs.append(gene)
     
     if(useTopMutatedList):
         for gene in top3000MutatedList['Gene']:
@@ -374,12 +377,15 @@ def datasetToInput(data, omics, drugs, coeffs):
             if gene in coeffs.index:
                 count+= 1
                 interceptionCoeffs.append(gene)
-
-    print(count)
     
 
+    if(useLandmarkForOmics):
+        omicsFinal = omics.T[  interceptionGenes  ]
+    else:
+        omicsFinal = omics.T
 
-    omicsFinal = omics.T[  interceptionGenes  ]
+    omicsSize = omicsFinal.shape[1]
+    
     if(useLandmarkForCoefficients or useTopMutatedList or useCancerDrivers):
         coeffsFinal = coeffs.T[interceptionCoeffs]
     else:
@@ -387,7 +393,6 @@ def datasetToInput(data, omics, drugs, coeffs):
     coeffsFinal['drug'] = coeffsFinal.index
     coeffsFinal['drug'] = coeffsFinal['drug']
     coeffsFinal= coeffsFinal.fillna(0)
-
     #get list of all used drugs
     listOfDrugs = data['NSC1']
     listOfDrugs = listOfDrugs.drop_duplicates().to_list()
@@ -427,7 +432,7 @@ def datasetToInput(data, omics, drugs, coeffs):
         fullSetB = fullSetA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
 
 
-    return fullSetB, len(interceptionGenes), len(interceptionCoeffs)
+    return fullSetB, omicsSize, coeffsFinal.shape[1]-1#cause of drug column
 
 
 
@@ -512,6 +517,12 @@ if(modelName=='dlMixed'):
 
     omicsModifiedInput = omicsDF * AcoeffsDF * BcoeffsDF
     sizeOmics = len(omicsModifiedInput.columns)
+    print(sizeOmics)
+
+    if(useDrugs):
+        AfingerDF = X.iloc[:, ind: ind+sizePrints]
+        ind += sizePrints
+        BfingerDF = X.iloc[:, ind: ind+sizePrints]
 
 
 def trainTestModel(sens=False, sensRun=0):
@@ -596,6 +607,8 @@ def trainTestModel(sens=False, sensRun=0):
                 XTest.append(singleAgentDFTest)
 
                 
+        print(XTrain[0])
+        print(XTrain[1])
 
         if(modelName!='base'):
         
@@ -792,5 +805,4 @@ if(sensitivityAnalysisMode):
         trainTestModel(sens=True, sensRun=ind)
         ind += 1
 else:
-    print(X)
     trainTestModel()

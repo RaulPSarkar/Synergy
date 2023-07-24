@@ -81,7 +81,7 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		drug1_input = Input(shape=drug_dim, name='drugA')
 		drug2_input = Input(shape=drug_dim, name='drugB')
 	if(useSingleAgent):
-		singleAgentInput = Input(shape=2, name='singleAgent')
+		singleAgentInput = Input(shape=4, name='singleAgent')
 
 
 	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,

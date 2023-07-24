@@ -151,9 +151,9 @@ df.drop_duplicates(inplace=True)
 #But now it's working :)
 singleAgent = df.groupby(['NSC1', 'CELLNAME']).mean().reset_index()
 singleAgent = singleAgent[['NSC1', 'CELLNAME', 'Library IC50', 'Library Emax']]
-singleAgent.columns = ['Anch', 'CELLNAME', 'Anchor IC50', 'Anchor Emax']
-df = pd.merge(df, singleAgent, left_on=['NSC2', 'CELLNAME'], right_on = ['Anch', 'CELLNAME'])
-df.drop(['Anch'], axis=1, inplace=True)
+singleAgent.columns = ['Anch', 'CELL', 'Anchor IC50', 'Anchor Emax']
+df = pd.merge(df, singleAgent, left_on=['NSC2', 'CELLNAME'], right_on = ['Anch', 'CELL'])
+df.drop(['Anch', 'CELL'], axis=1, inplace=True)
 #df.rename(columns={'NSC1_x': 'NSC1'}, inplace=True)
 print(df)
 print(df.columns)

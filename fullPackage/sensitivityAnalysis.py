@@ -74,3 +74,10 @@ plot.set(xticks=sensitivitySizeFractions)
 plot.set(xticklabels=sensitivitySizeFractions)
 #taken from https://stackoverflow.com/questions/64769205/seaborn-lineplot-logarithmic-scale
 plt.show()
+figure = plt.gcf()
+figure.set_size_inches(32, 18)
+
+fileName = 'sizeSensAnalysis.png'
+plt.savefig(graphsFolder / fileName)
+plt.close()
+
