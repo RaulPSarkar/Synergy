@@ -20,6 +20,7 @@ colonPath = Path(__file__).parent / "datasets/colon_anchor_combo.csv.gz"
 breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
 omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
+singleAgent = Path(__file__).parent / "datasets/drugresponse.csv"
 outputFile = Path(__file__).parent / "datasets/processedCRISPR.csv"
 outputSMILEStoFingerprints = Path(__file__).parent / "datasets/smiles2fingerprints.csv"
 outputSMILEStoShuffledFingerprints = Path(__file__).parent / "datasets/smiles2shuffledfingerprints.csv"
@@ -115,6 +116,22 @@ crisprT = crispr.T
 #crispr.T.to_csv('transcriptomicsT.csv')
 
 
+####GENERATE A DATAFRAME WITH SINGLE AGENT (IC50) VALUES
+singleAgent = pd.read_csv(singleAgent)
+singleAgent[['ID','Drug', 'GDSC']] = singleAgent['Unnamed: 0'].str.split(';',expand=True)
+singleAgent.drop(['Unnamed: 0', 'ID', 'GDSC'], axis=1, inplace=True)
+singleAgentSIDMCols = singleAgent.columns[:-1]
+#singleAgent = singleAgent.drop_duplicates('Drug', keep='last')
+plz = pd.melt(singleAgent, id_vars='Drug', value_vars=singleAgentSIDMCols)
+plz = plz.dropna(how='any')
+plz = plz.drop_duplicates(subset=['Drug','variable'], keep='last') #because its GDSC2
+#df = pd.pivot(singleAgent, index='Drug', columns='SIDM00023', values='EN_coef')
+#test = pd.wide_to_long(df=singleAgent, stubnames='SIDM', i='Drug', j='Combo') 
+#print(test)
+#THIS CODE IS COMPLETELY IRRELEVANT, I'LL DELETE LATER, IT WAS JUST CAUSE OTHER THING DIDN'T WORK
+######################
+
+
 #Otherwise there's not enough RAM
 splitOut = np.array_split(out2, splitInto)
 finalDF = []
@@ -126,30 +143,39 @@ for outDF in splitOut:
 
 
 df = pd.concat(finalDF, axis=0)
+
+
 df.drop_duplicates(inplace=True)
+
+#THIS DIDN'T WORK (TO ADD ANCHOR SINGLE AGENT VALUES) :(
+#But now it's working :)
+singleAgent = df.groupby(['NSC1', 'CELLNAME']).mean().reset_index()
+singleAgent = singleAgent[['NSC1', 'CELLNAME', 'Library IC50', 'Library Emax']]
+singleAgent.columns = ['Anch', 'CELLNAME', 'Anchor IC50', 'Anchor Emax']
+df = pd.merge(df, singleAgent, left_on=['NSC2', 'CELLNAME'], right_on = ['Anch', 'CELLNAME'])
+df.drop(['Anch'], axis=1, inplace=True)
+#df.rename(columns={'NSC1_x': 'NSC1'}, inplace=True)
+print(df)
+print(df.columns)
+
 
 scaler = MinMaxScaler()
 scaler.fit(df[['Library IC50']])
 df[['Library IC50']] = scaler.transform(df[['Library IC50']])
 scaler.fit(df[['Library Emax']])
 df[['Library Emax']] = scaler.transform(df[['Library Emax']])
+scaler.fit(df[['Anchor IC50']])
+df[['Anchor IC50']] = scaler.transform(df[['Anchor IC50']])
+scaler.fit(df[['Anchor Emax']])
+df[['Anchor Emax']] = scaler.transform(df[['Anchor Emax']])
 
 #minmax scale the single agent values since they're kinda big
 
 dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'NSC1', 'NSC2'])
 
 
-#THIS DIDN'T WORK (TO ADD ANCHOR SINGLE AGENT VALUES)
-#singleAgent = dfSuperFinal.groupby(['NSC1', 'CELLNAME']).mean().reset_index()
-#singleAgent = singleAgent[['NSC1', 'CELLNAME', 'Library IC50']]
-#actuallySuperFinalDF = pd.merge(dfSuperFinal, singleAgent, left_on=['NSC1', 'CELLNAME', 'Library IC50'], right_on = ['NSC1', 'CELLNAME', 'Library IC50'])
-#merging on multiple columns, taken from https://stackoverflow.com/questions/41815079/pandas-merge-join-two-data-frames-on-multiple-columns
-#print(dfSuperFinal)
-#print(actuallySuperFinalDF)
 
-
-
-
+print(dfSuperFinal)
 
 
 

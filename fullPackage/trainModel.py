@@ -40,9 +40,10 @@ tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimizat
 tunerRun = 7 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
-useTopMutatedList = False
-useCancerDrivers = True #whether to use cancer driver genes for coefficient branch
-useSingleAgentResponse = False #adds single agent data  
+useLandmarkForCoefficients = False #whether to use landmark cancer genes for coefficient branch
+useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for coefficient branch
+useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
+useSingleAgentResponse = True #adds single agent data  
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
@@ -357,7 +358,7 @@ def datasetToInput(data, omics, drugs, coeffs):
     for gene in landmarkList['pr_gene_symbol']:
         if gene in omics.T.columns:
             interceptionGenes.append(gene)
-            if( (not useTopMutatedList) and (not useCancerDrivers)):
+            if(useLandmarkForCoefficients):
                 if gene in coeffs.index:
                     interceptionCoeffs.append(gene)
     
@@ -379,7 +380,10 @@ def datasetToInput(data, omics, drugs, coeffs):
 
 
     omicsFinal = omics.T[  interceptionGenes  ]
-    coeffsFinal = coeffs.T[interceptionCoeffs]
+    if(useLandmarkForCoefficients or useTopMutatedList or useCancerDrivers):
+        coeffsFinal = coeffs.T[interceptionCoeffs]
+    else:
+        coeffsFinal = coeffs.T
     coeffsFinal['drug'] = coeffsFinal.index
     coeffsFinal['drug'] = coeffsFinal['drug']
     coeffsFinal= coeffsFinal.fillna(0)
@@ -441,10 +445,10 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
-singleAgentDF = X.loc[:, ['Library IC50','Library Emax']]
+singleAgentDF = X.loc[:, ['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax']]
 
 if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlMixed')   ):
-    X = X.drop(['Library IC50','Library Emax'], axis=1)
+    X = X.drop(['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax'], axis=1)
     #I'm deleting these columns case it's a DL model, to make selecting each DF from X easier up ahead.
     #This is why I created singleAgentDF earlier
     
@@ -788,4 +792,5 @@ if(sensitivityAnalysisMode):
         trainTestModel(sens=True, sensRun=ind)
         ind += 1
 else:
+    print(X)
     trainTestModel()
