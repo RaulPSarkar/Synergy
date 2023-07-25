@@ -5,9 +5,10 @@ from pathlib import Path
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
 
-
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun70regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun71regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun72regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun73regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun74regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun75regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun76regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun77regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun78regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun79regularplusDrugs.csv',]
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun70regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun71regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun72regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun73regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun74regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun75regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun76regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun77regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun78regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun79regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun710regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun711regularplusDrugs.csv']
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #sizes used for training (used to plot the model)
 resultsFolder =  Path(__file__).parent / 'results' / 'sens'
 graphsFolder =  Path(__file__).parent / 'graphs' / 'sens'
@@ -67,17 +68,27 @@ print(fullStatsDF)
 
 
 
-sns.set_style('whitegrid')
-plot=sns.lineplot(data=fullStatsDF, x="name", y="Pearson IC50")
-plot.set(xscale='log')
-plot.set(xticks=sensitivitySizeFractions)
-plot.set(xticklabels=sensitivitySizeFractions)
-#taken from https://stackoverflow.com/questions/64769205/seaborn-lineplot-logarithmic-scale
-plt.show()
-figure = plt.gcf()
-figure.set_size_inches(32, 18)
+for metricName in ['Pearson IC50', 'Spearman IC50', 'R2 IC50', 'Spearman Emax', 'R2 Emax', 'MSE Emax']:
+    
 
-fileName = 'sizeSensAnalysis.png'
-plt.savefig(graphsFolder / fileName)
-plt.close()
+    
+    sns.set_style('whitegrid')
+    plot=sns.lineplot(data=fullStatsDF, x="name", y="Pearson IC50")
+
+    plot.set(xscale='log')
+    plot.set(xticks=sensitivitySizeFractions)
+    plot.set(xticklabels=sensitivitySizeFractions)
+    plot.set(yticks=np.linspace(0, 1, 11))
+
+    figure = plt.gcf()
+    figure.set_size_inches(32, 18)
+    matplotlib.rc('font', size=25)
+    matplotlib.rc('axes', titlesize=25)
+    plt.xlabel("Fraction of Dataset used to Train/Test Model", size=36)
+    plt.title('Model Performance per Dataset Size', size=44)
+    plt.ylabel(metricName, size=36)
+
+    fileName = 'sizeSensAnalysis' + metricName + '.png'
+    plt.savefig(graphsFolder / fileName)
+    plt.close()
 

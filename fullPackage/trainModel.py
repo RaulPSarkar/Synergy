@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.linear_model import Ridge
 import tensorflow as tf
-from src.buildDLModel import buildDL, buildNewDL
+from src.buildDLModel import buildDL, cnnOmicsModel
 
 import matplotlib.pyplot as plt
 from sklearn import tree
@@ -34,19 +34,21 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlMixed
+omicsType = 'crispr' #ge (gene expression), crispr, proteomics
+modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 100 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 106 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
+useThresholdsForCoefficients = True #whether to use coefficient thresholds for coefficient branch
 useLandmarkForCoefficients = False #whether to use landmark cancer genes for coefficient branch
 useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for coefficient branch
 useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
 useSingleAgentResponse = True #adds single agent data  
-useCoeffs = False #adds coefficient data to model. irrelevant if using a dl model
-useDrugs = False #adds drug data to model. irrelevant if using a dl model
+useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
+useDrugs = True #adds drug data to model. irrelevant if using a dl model
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #trains the model with each of
@@ -56,8 +58,17 @@ sizePrints = 1024
 
 
 ############FILEPATHS
-data = Path(__file__).parent / 'datasets/processedCRISPR.csv'
-omics = Path(__file__).parent / 'datasets/crispr.csv.gz'
+crispr = Path(__file__).parent / 'datasets/processedCRISPR.csv'
+crisprWithSingle = Path(__file__).parent / 'datasets/processedCRISPRwithSingle.csv'
+geneExpression = Path(__file__).parent / 'datasets/processedGeneExpression.csv'
+geneExpressionWithSingle = Path(__file__).parent / 'datasets/processedGeneExpressionwithSingle.csv'
+proteomicsProcessed = Path(__file__).parent / 'datasets/processedProteomics.csv'
+proteomicsWithSingle = Path(__file__).parent / 'datasets/processedProteomicswithSingle.csv'
+
+crisprOmics = Path(__file__).parent / 'datasets/crispr.csv.gz'
+transcriptomics = Path(__file__).parent / 'datasets/transcriptomics.csv.gz'
+proteomics = Path(__file__).parent / 'datasets/proteomics.csv.gz'
+
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 #fingerprints = Path(__file__).parent / 'datasets/smiles2shuffledfingerprints.csv'
 landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
@@ -67,12 +78,17 @@ outputPredictions = Path(__file__).parent / 'predictions'
 tunerDirectory = Path(__file__).parent / 'tuner'
 #tunerDirectory = Path('W:\Media') / 'tuner'
 coeffs = Path(__file__).parent / 'datasets/coefsProcessed.csv'
+coeffsWithThresholds = Path(__file__).parent / 'datasets/coefsProcessedWithThreshold.csv'
 
 
 ##########################
 ##########################
 
 
+
+
+if(useThresholdsForCoefficients):
+    coeffs = coeffsWithThresholds
 
 
 
@@ -85,19 +101,14 @@ parser.add_argument(
     default=modelName,
     help="Name of the model to train: en, rf, lgbm, svr, xgboost, base",
 )
-parser.add_argument(
-    "-p",
-    "--data",
-    default=data,
-    help="Processed combo file (from processGDSC.py)",
-)
 
 parser.add_argument(
     "-o",
-    "--omics",
-    default=omics,
-    help="Omics Dataset file",
+    "--omicsType",
+    default=omicsType,
+    help="Omics Type (ge, crispr, protemics)",
 )
+
 
 parser.add_argument(
     "-f",
@@ -173,9 +184,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+omicsType = args.omicsType
 modelName = args.model
-data = args.data
-omics = args.omics
 fingerprints = args.fingerprints
 landmarkList = args.landmarkList
 outputPredictions = args.predictions
@@ -190,6 +200,25 @@ coeffs = args.coeffs
 top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
 cancerDriverGenes = pd.read_csv(cancerDriverGenes)
 
+if(omicsType=='ge'):
+    omics = transcriptomics
+    if(useSingleAgentResponse):
+        data = geneExpressionWithSingle
+    else:
+        data = geneExpression
+elif(omicsType=='crispr'):
+    omics = crisprOmics
+    if(useSingleAgentResponse):
+        data = crisprWithSingle
+    else:
+        data = crispr
+elif(omicsType=='proteomics'):
+    omics = proteomics
+    if(useSingleAgentResponse):
+        data = proteomicsWithSingle
+    else:
+        data = proteomicsProcessed
+
 
 #print(tf.config.list_physical_devices('GPU'))
 print("Model selected: " + modelName)
@@ -202,10 +231,16 @@ elif(modelName.strip()=='dlCoeffs'):
 elif(modelName.strip()=='dlFull'):
     useCoeffs = True
     useDrugs = True
+elif(modelName.strip()=='dlCNN'):
+    useCoeffs = True
+    #useDrugs = False
+    #why not?
 elif(modelName.strip()=='dlMixed'):
     useCoeffs = True
     #useDrugs = False
     #why not?
+
+
 
 if not os.path.exists(outputPredictions):
     os.mkdir(outputPredictions)
@@ -244,14 +279,33 @@ def buildModel(hp):
                 learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
     
 
+    elif(use=='dlCNN'):
+        model = cnnOmicsModel(predictorHlayersSizes=hp.Choice('predictorHlayersSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                              hiddenActivation=hp.Choice('hiddenActivation',['relu','prelu', 'leakyrelu']),
+                              cnnActivation=hp.Choice('cnnActivation',['relu','prelu', 'leakyrelu']),
+                              sizeOmics = sizeOmics,
+                              useDrugs = useDrugs,
+                              drugDim = sizePrints,
+                              omicsOutputNeurons=hp.Choice('omicsOutputNeurons', [16,32,48,64,128]),
+                              drugHlayerSizes=hp.Choice('drugHlayerSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                              hiddenDropout=hp.Choice('hiddenDropout', [0.1, 0.2,0.3,0.4,0.5]),
+                              filters=hp.Choice('filters', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
+                              secondFilter=hp.Choice('secondFilter', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
+                              kernelSize=hp.Choice('kernelSize', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20]),
+                              secondKernel=hp.Choice('secondKernel', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20]),
+                              l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
+                              useSingleAgent = useSingleAgentResponse,
+                              learnRate = hp.Choice('learnRate', [0.01, 0.001, 0.0001, 1e-05]))
     elif(use=='dlMixed'):
         model = buildDL(expr_dim = sizeOmics, 
                 drug_dim = sizePrints,
+                coeffs_dim= sizeCoeffs,
+                useCoeffs=True,
+                useDrugs=False,
                 useSingleAgent=useSingleAgentResponse,
-                mixedModel=True,
-                useDrugs=useDrugs,
-                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
                 l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
@@ -389,7 +443,14 @@ def datasetToInput(data, omics, drugs, coeffs):
     if(useLandmarkForCoefficients or useTopMutatedList or useCancerDrivers):
         coeffsFinal = coeffs.T[interceptionCoeffs]
     else:
-        coeffsFinal = coeffs.T
+        if(modelName=='dlCNN' or modelName=='dlMixed'):
+            for gene in interceptionGenes:
+                if gene in coeffs.index:
+                    interceptionCoeffs.append(gene)
+            coeffsFinal = coeffs.T[interceptionCoeffs]
+        else:
+            coeffsFinal = coeffs.T
+
     coeffsFinal['drug'] = coeffsFinal.index
     coeffsFinal['drug'] = coeffsFinal['drug']
     coeffsFinal= coeffsFinal.fillna(0)
@@ -450,10 +511,21 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
 
-singleAgentDF = X.loc[:, ['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax']]
+hasAnchorSingles=False
+if 'Anchor IC50' in X:
+    hasAnchorSingles=True
+    singleAgentDF = X.loc[:, ['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax']]
+else:
+    singleAgentDF = X.loc[:, ['Library IC50','Library Emax']]
+  
 
-if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlMixed')   ):
-    X = X.drop(['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax'], axis=1)
+
+if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN' or modelName=='dlMixed')   ):
+    if(hasAnchorSingles):
+        X = X.drop(['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax'], axis=1)
+    else:
+        X = X.drop(['Library IC50','Library Emax'], axis=1)
+
     #I'm deleting these columns case it's a DL model, to make selecting each DF from X easier up ahead.
     #This is why I created singleAgentDF earlier
     
@@ -470,7 +542,7 @@ runString = 'run' + str(tunerRun)
 
 
 
-if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlMixed'):
+if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN'):
     ind = 0
     omicsDF = X.iloc[:, ind: ind+sizeOmics]
     ind += sizeOmics
@@ -486,7 +558,7 @@ if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=
         ind += sizePrints
         BfingerDF = X.iloc[:, ind: ind+sizePrints]
 
-if(modelName=='dlMixed'):
+if(modelName=='dlCNN'):
     
     omicsDFB = omicsDF.add_suffix('Blist')
     omicsDFA = omicsDF.add_suffix('Alist')
@@ -506,23 +578,21 @@ if(modelName=='dlMixed'):
 
     omicsDF=omicsDFA[interceptionGenes]
     AcoeffsDF=AcoeffsDF[interceptionGenes]
-    BcoeffsDF=BcoeffsDF[interceptionGenesB]
+    BcoeffsDF=BcoeffsDF[interceptionGenesB]    
+    sizeOmics = len(interceptionGenes)
 
 
-    AcoeffsDF = 1 - AcoeffsDF
-    BcoeffsDF = 1 - BcoeffsDF
+    #print(fullAwesomeOmics)
+    #AcoeffsDF = 1 - AcoeffsDF
+    #BcoeffsDF = 1 - BcoeffsDF
+    #AcoeffsDF.columns = omicsDF.columns
+    #BcoeffsDF.columns = omicsDF.columns
+    #omicsModifiedInput = omicsDF * AcoeffsDF * BcoeffsDF
 
-    AcoeffsDF.columns = omicsDF.columns
-    BcoeffsDF.columns = omicsDF.columns
-
-    omicsModifiedInput = omicsDF * AcoeffsDF * BcoeffsDF
-    sizeOmics = len(omicsModifiedInput.columns)
-    print(sizeOmics)
-
-    if(useDrugs):
-        AfingerDF = X.iloc[:, ind: ind+sizePrints]
-        ind += sizePrints
-        BfingerDF = X.iloc[:, ind: ind+sizePrints]
+    #if(useDrugs):
+    #    AfingerDF = X.iloc[:, ind: ind+sizePrints]
+    #    ind += sizePrints
+    #    BfingerDF = X.iloc[:, ind: ind+sizePrints]
 
 
 def trainTestModel(sens=False, sensRun=0):
@@ -552,11 +622,11 @@ def trainTestModel(sens=False, sensRun=0):
         suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
         y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
 
-        if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+        if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlCNN'):
             X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
         else:
 
-            if(modelName!='dlMixed'):
+            if(modelName!='dlCNN'):
 
                 omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
 
@@ -588,14 +658,29 @@ def trainTestModel(sens=False, sensRun=0):
                     XTest.append(singleAgentDFTest)
 
             else:
-                singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
-                omicsDFTrain, omicsDFTest = omicsModifiedInput.iloc[train_index,:],omicsModifiedInput.iloc[test_index,:]
+                if(useSingleAgentResponse):
+                    singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
+                omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
                 if(useDrugs):
                     AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
                     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
+                #XTrain = [omicsDFTrain]
+                #XTest = [omicsDFTest]
+                
+                AcoeffsTrain, AcoeffsTest =AcoeffsDF.iloc[train_index,:], AcoeffsDF.iloc[test_index,:]
+                BcoeffsTrain, BcoeffsTest =BcoeffsDF.iloc[train_index,:], BcoeffsDF.iloc[test_index,:]
 
-                XTrain = [omicsDFTrain]
-                XTest = [omicsDFTest]
+                XTrain = np.array( [omicsDFTrain.to_numpy(), AcoeffsTrain.to_numpy(), BcoeffsTrain.to_numpy()] )
+                XTest = np.array( [omicsDFTest.to_numpy(), AcoeffsTest.to_numpy(), BcoeffsTest.to_numpy()] )
+
+
+                #XTrain = fullAwesomeOmics
+                #XTest = fullAwesomeOmics
+                XTrain = tf.reshape(XTrain, [XTrain.shape[1], XTrain.shape[0], XTrain.shape[2]] )
+                XTest = tf.reshape(XTest, [XTest.shape[1], XTest.shape[0], XTest.shape[2]] )
+                if(useSingleAgentResponse):
+                    XTrain = [XTrain, singleAgentDFTrain]
+                    XTest = [XTest, singleAgentDFTest]
 
                 if(useDrugs):
                     XTrain.append(AfingerDFTrain)
@@ -603,12 +688,13 @@ def trainTestModel(sens=False, sensRun=0):
                     XTest.append(AfingerDFTest)
                     XTest.append(BfingerDFTest)
 
-                XTrain.append(singleAgentDFTrain)
-                XTest.append(singleAgentDFTest)
+                #XTrain = tf.convert_to_tensor(1)
+                #XTest = tf.convert_to_tensor(1)
+                #XTrain = tf.ragged.constant(XTrain)
+                #XTest = tf.ragged.constant(XTest)
+                #XTrain = tf.convert_to_tensor(XTrain)
+                #XTest = tf.convert_to_tensor(XTest)
 
-                
-        print(XTrain[0])
-        print(XTrain[1])
 
         if(modelName!='base'):
         
@@ -621,7 +707,7 @@ def trainTestModel(sens=False, sensRun=0):
 
             hyperList = []
 
-            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlCNN'):
                 tuner = keras_tuner.tuners.SklearnTuner(
                     oracle=keras_tuner.oracles.BayesianOptimizationOracle(
                         objective=keras_tuner.Objective('score', 'min'),
@@ -672,7 +758,7 @@ def trainTestModel(sens=False, sensRun=0):
 
         
         if(modelName!='base'):
-            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlMixed'):
+            if(modelName!='dl' and modelName!='dlCoeffs' and modelName!='dlFull' and modelName!='dlCNN'):
                 model = buildModel(best_hp)
                 model.fit(X_train, y_train)
                 #print(model.estimators_[0].coef_ )
@@ -755,7 +841,8 @@ def trainTestModel(sens=False, sensRun=0):
         index+=1
         fullPredictions.append(df)
 
-    emptyString = ''
+    emptyString = omicsType
+    
     if(useSingleAgentResponse):
         emptyString = 'plusSingle'
 

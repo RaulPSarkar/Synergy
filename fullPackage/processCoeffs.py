@@ -9,44 +9,44 @@ import matplotlib.pyplot as plt
 
 
 #
+processWithThresholdsBelow = True #whether to do any processing of which genes to keep (with params below)
 minimumNonNull = 0 #threshold of minimum amount of non-null coefficients for gene to be maintained
-
 coefficientValueThreshold = 0.02
 minimumNumberAbove = 3 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
-
-#a second threshold, similar to the previous one
-coefficientValueSecondThreshold = 0.08
+coefficientValueSecondThreshold = 0.08 #a second threshold, similar to the previous one
 minimumSecondNumberAbove = 1 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
-
-
 coeffs = Path(__file__).parent / 'datasets/CoefficientsLasso.csv'
-coeffs = pd.read_csv(coeffs, index_col=0)
+outputFile = Path(__file__).parent / "datasets/coefsProcessedWithThreshold.csv"
 
+
+
+coeffs = pd.read_csv(coeffs, index_col=0)
 #drop all the intercepts (not needed, for now)
 coeffs = coeffs[coeffs['features'] != '(Intercept)']
 coeffs = coeffs.drop(['Drug_id'], axis=1)
-
-
 coeffs = coeffs.drop_duplicates(subset=['Drug_name','features'], keep='last')
 df = pd.pivot(coeffs, index='features', columns='Drug_name', values='EN_coef')
-outputFile = Path(__file__).parent / "datasets/coefsProcessed.csv"
 
 
 #####ADDING THRESHOLDS TO REDUCE TOTAL NUMBER OF GENES USED TO TRAIN THE MODEL
 ##############################################################################
 
-df.fillna(0, inplace=True)
-#TAKEN FROM https://stackoverflow.com/questions/26053849/counting-non-zero-values-in-each-column-of-a-dataframe-in-python
-nonNullAmounts = df.astype(bool).sum(axis=1)
-firstFiltered = df.loc[nonNullAmounts >= minimumNonNull] #just selecting rows above threshold (based on nonNullAmounts series)
+if(processWithThresholdsBelow):
+    df.fillna(0, inplace=True)
+    #TAKEN FROM https://stackoverflow.com/questions/26053849/counting-non-zero-values-in-each-column-of-a-dataframe-in-python
+    nonNullAmounts = df.astype(bool).sum(axis=1)
+    firstFiltered = df.loc[nonNullAmounts >= minimumNonNull] #just selecting rows above threshold (based on nonNullAmounts series)
 
-aboveThresholdFrequency = firstFiltered[abs(firstFiltered) >= coefficientValueThreshold].count(axis=1) #needs to be the absolute value
-secondFiltered = firstFiltered.loc[aboveThresholdFrequency >= minimumNumberAbove]
+    aboveThresholdFrequency = firstFiltered[abs(firstFiltered) >= coefficientValueThreshold].count(axis=1) #needs to be the absolute value
+    secondFiltered = firstFiltered.loc[aboveThresholdFrequency >= minimumNumberAbove]
 
 
-aboveSecondThresholdFrequency = secondFiltered[abs(secondFiltered) >= coefficientValueSecondThreshold].count(axis=1) #needs to be the absolute value
-thirdFiltered = secondFiltered.loc[aboveSecondThresholdFrequency >= minimumSecondNumberAbove]
+    aboveSecondThresholdFrequency = secondFiltered[abs(secondFiltered) >= coefficientValueSecondThreshold].count(axis=1) #needs to be the absolute value
+    thirdFiltered = secondFiltered.loc[aboveSecondThresholdFrequency >= minimumSecondNumberAbove]
+    thirdFiltered.to_csv(outputFile)
 
+else:
+    df.to_csv(outputFile)
 
 #sns.histplot(data=nonNullAmounts)
 #plt.show()
@@ -60,4 +60,3 @@ thirdFiltered = secondFiltered.loc[aboveSecondThresholdFrequency >= minimumSecon
 ##############################################################################
 
 
-thirdFiltered.to_csv(outputFile)

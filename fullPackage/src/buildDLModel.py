@@ -9,6 +9,12 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU, PReLU
 
+from tensorflow.keras import datasets, layers, models
+import matplotlib.pyplot as plt
+
+from keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, BatchNormalization, MaxPooling2D,Flatten,Dropout,Dense
+from tensorflow.keras  import optimizers
 
 
 from tensorflow.keras import optimizers
@@ -22,43 +28,7 @@ sys.path.append("..")
 
 
 
-def buildNewDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
-                          predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
-                          l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 
-
-	expr_input = Input(shape=expr_dim, name='expr')
-
-	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
-	                      hidden_activation=hidden_activation, input_dropout=input_dropout,
-	                      hidden_dropout=hidden_dropout)
-	
-
-	
-
-	singleAgentInput = Input(shape=2, name='singleAgent')
-
-	concat = concatenate(fullConcat)
-	# Additional dense layers after concatenating:
-	main_branch = dense_submodel(concat, hlayers_sizes=predictor_hlayers_sizes,
-	                             l1_regularization=l1, l2_regularization=l2,
-	                             hidden_activation=hidden_activation, input_dropout=0,
-	                             hidden_dropout=hidden_dropout)
-
-
-	fullInputs = [expr_input, singleAgentInput]
-
-	# Add output layer
-	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(expr)
-
-
-	model = Model(inputs=fullInputs, outputs=[output])
-
-	
-	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
-
-
-	return model
 
 
 
@@ -99,6 +69,7 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		drugB = drug_submodel(drug2_input)
 
 
+
 	if(useCoeffs):
 		coeffs_submodel = drug_dense_submodel(coeffs_dim, hlayers_sizes=coeffs_hlayers_sizes, l1_regularization=l1,
 										l2_regularization=l2, hidden_activation=hidden_activation,
@@ -114,15 +85,12 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 	if(useDrugs):
 		fullConcat.append(drugA)
 		fullConcat.append(drugB)
-		
+	if(useSingleAgent):
+		fullConcat.append(singleAgentInput)
+
+
 
 	concat = concatenate(fullConcat)
-	#if(useCoeffs and useDrugs):
-		#concat = concatenate([expr, coeffsA, coeffsB, drugA, drugB])
-	#elif(useDrugs):
-	#	concat = concatenate([expr, drugA, drugB])
-	#else:
-	#	concat = concatenate([expr, coeffsA, coeffsB])
 
 
 	# Additional dense layers after concatenating:
@@ -130,6 +98,7 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 	                             l1_regularization=l1, l2_regularization=l2,
 	                             hidden_activation=hidden_activation, input_dropout=0,
 	                             hidden_dropout=hidden_dropout)
+	
 	# Add output layer
 	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(main_branch)
 
@@ -143,16 +112,12 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		fullInputs.append(drug2_input)
 	if(useSingleAgent):
 		fullInputs.append(singleAgentInput)
-		#fullInputs.append()
-	#if(useCoeffs and useDrugs):
-	model = Model(inputs=fullInputs, outputs=[output])
 
-		#model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input, drug1_input, drug2_input], outputs=[output])
-	#elif(useDrugs):
-	#model = Model(inputs=[expr_input, drug1_input, drug2_input], outputs=[output])
-	#else:
-	#	model = Model(inputs=[expr_input, coeffs1_input, coeffs2_input], outputs=[output])
-		
+
+
+	model = Model(inputs=fullInputs, outputs=[output])
+	#model = Model(inputs=cnnInp, outputs=[output])
+
 	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learn_rate))
 
 
@@ -215,3 +180,64 @@ def dense_submodel(input_layer, hlayers_sizes='[10]', l1_regularization=0, l2_re
 			x = dropout(rate=hidden_dropout)(x)
 
 	return x
+
+
+
+
+def cnnOmicsModel(useDrugs=False, omicsOutputNeurons = 64, drugDim=1024, sizeOmics = 0, filters=32, secondFilter=32, kernelSize=3, secondKernel=3, drugHlayerSizes= '[10]',predictorHlayersSizes='[10]', cnnActivation = 'relu', hiddenActivation='relu', initializer='he_normal', hiddenDropout=0, l1=0, l2=0, useSingleAgent = True, learnRate = 0.001):
+
+
+	if(useDrugs):
+		drug1_input = Input(shape=drugDim, name='drugA')
+		drug2_input = Input(shape=drugDim, name='drugB')
+
+
+	inputOmicsLayer = Input(shape=(3, sizeOmics))
+	y = tf.keras.layers.Conv1D(filters, kernelSize, activation='relu', input_shape=(3, sizeOmics), padding='same')(inputOmicsLayer)
+	yy = tf.keras.layers.Conv1D(secondFilter, secondKernel, activation='relu', input_shape=(3, sizeOmics), padding='same')(y)
+	z = tf.keras.layers.Flatten()(yy)
+	w = tf.keras.layers.Dense(omicsOutputNeurons)(z)
+
+
+	
+		
+		
+
+	fullInputs = [inputOmicsLayer]
+	inputsForMain = [w]
+	if(useSingleAgent):
+		singleAgentInput = Input(shape=4, name='singleAgent')
+		inputsForMain.append(singleAgentInput)
+		fullInputs.append(singleAgentInput)
+	if(useDrugs):
+		fullInputs.append(drug1_input)
+		fullInputs.append(drug2_input)
+		drug_submodel = drug_dense_submodel(drugDim, hlayers_sizes=drugHlayerSizes, l1_regularization=l1,
+									l2_regularization=l2, hidden_activation=hiddenActivation,
+									input_dropout=0, hidden_dropout=hiddenDropout)
+		drugA = drug_submodel(drug1_input)
+		drugB = drug_submodel(drug2_input)
+
+		inputsForMain.append(drugA)
+		inputsForMain.append(drugB)
+
+
+	inputsForMain = concatenate(inputsForMain)
+
+	# Additional dense layers after concatenating:
+	mainBranch = dense_submodel(inputsForMain, hlayers_sizes=predictorHlayersSizes,
+	                             l1_regularization=l1, l2_regularization=l2,
+	                             hidden_activation=hiddenActivation, input_dropout=0,
+	                             hidden_dropout=hiddenDropout)
+	
+	# Add output layer
+
+	output = Dense(2, activation='linear', kernel_initializer=initializer, name='output')(mainBranch)
+
+	model = Model(inputs=fullInputs , outputs=[output], name='CNN')
+	model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate=learnRate))
+	#return model
+
+	return model
+
+
