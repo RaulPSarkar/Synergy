@@ -23,7 +23,7 @@ from src.graphFunctions import regressionGraphs, barplot, stackedbarplot
 #modelStatsFolder =  Path(__file__).parent / 'results' / 'shuffled'
 
 #Misc Results
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' / 'final' / 'dlFull' /'dlFullrun98.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffsplusDrugs.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlMixed0Old.csv', Path(__file__).parent / 'predictions' /'temp'/ 'lgbm0.csv']
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' / 'final' / 'dlFull' /'dlFullrun98.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffsplusDrugs.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlMixed0Old.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv']
 predictionNames = ['DL', 'LGBM','DL Coeffs', 'DL Full', 'LGBM Coeffs', 'LGBM Full', 'DL Mixed', 'LGBM Coeffs+Single']
 saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
 modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
