@@ -1,0 +1,16 @@
+n_estimators,max_depth,max_features,min_samples_split,min_samples_leaf,bootstrap,fold,rank
+950,55,sqrt,2,1,False,1,1
+395,39,sqrt,3,1,False,1,2
+100,43,sqrt,3,1,False,1,3
+1000,46,sqrt,2,1,False,2,1
+430,46,sqrt,3,1,False,2,2
+918,39,sqrt,5,1,False,2,3
+1000,49,sqrt,2,1,False,3,1
+659,55,sqrt,3,1,False,3,2
+1000,55,sqrt,5,1,False,3,3
+779,55,sqrt,2,1,False,4,1
+100,55,sqrt,2,1,False,4,2
+380,52,sqrt,5,1,False,4,3
+1000,38,sqrt,4,1,False,5,1
+100,55,sqrt,2,1,False,5,2
+764,55,sqrt,5,1,False,5,3
