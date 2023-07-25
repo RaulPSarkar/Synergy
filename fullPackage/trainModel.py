@@ -34,7 +34,7 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-omicsType = 'proteomics' #ge (gene expression), crispr, proteomics
+omicsType = 'crispr' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
@@ -42,7 +42,7 @@ tunerRun = 107 #increase if you want to start the hyperparameter optimization pr
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
-useThresholdsForCoefficients = True #whether to use coefficient thresholds for coefficient branch
+useThresholdsForCoefficients = False #whether to use coefficient thresholds for coefficient branch
 useLandmarkForCoefficients = False #whether to use landmark cancer genes for coefficient branch
 useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for coefficient branch
 useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
