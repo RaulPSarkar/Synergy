@@ -34,11 +34,11 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-omicsType = 'crispr' #ge (gene expression), crispr, proteomics
+omicsType = 'proteomics' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 106 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 107 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -48,7 +48,7 @@ useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for
 useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
 useSingleAgentResponse = True #adds single agent data  
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
-useDrugs = True #adds drug data to model. irrelevant if using a dl model
+useDrugs = False #adds drug data to model. irrelevant if using a dl model
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #trains the model with each of
@@ -222,6 +222,7 @@ elif(omicsType=='proteomics'):
 
 #print(tf.config.list_physical_devices('GPU'))
 print("Model selected: " + modelName)
+print("Omics selected: " + omicsType)
 if (modelName.strip()=='dl'):
     useCoeffs = False
     useDrugs = True
@@ -252,6 +253,8 @@ if not os.path.exists(outputPredictions):
 
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
+omics = omics.fillna(0)
+
 fingerprints = pd.read_csv(fingerprints)
 landmarkList = pd.read_csv(landmarkList,sep='\t')
 coeffs = pd.read_csv(coeffs, index_col=0)
@@ -530,6 +533,7 @@ if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or m
     #This is why I created singleAgentDF earlier
     
 
+print(X)
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 #make this a function maybe
 
