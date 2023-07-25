@@ -39,7 +39,11 @@ def barplot(df, saveFolder, type='gdsc', resultName = 'name', groupedBars=False)
         else:
             ax1 = plt.subplot(1, 2, 1)
             splot=sns.barplot(x='name',y=resultName,data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        splot.set(yticks=np.linspace(0, 1, 11))
+        
+        #pearson/spearman/r2 graphs go from 0 to 1, but not mse
+        if( ('Pearson' in resultName) or ('Spearman' in resultName) or ('R2' in resultName)):
+            splot.set(yticks=np.linspace(0, 1, 11))
+
         plt.xlabel("Model Used", size=36)
         plt.title('Performance for each model', size=54)
         plt.ylabel(resultName, size=36)

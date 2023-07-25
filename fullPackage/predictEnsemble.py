@@ -30,9 +30,17 @@ from pathlib import Path
 
 
 #Cell CV Ensemble
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'dlrun1cell.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99cellplusDrugs.csv']
-predictionWeights = [1,1,1,1]
-outputEnsembleFile = Path(__file__).parent / 'predictions'  /'final'/ 'ensemble' / 'ensembleCell.csv'
+#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'dlrun1cell.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99cellplusDrugs.csv']
+#predictionWeights = [1,1,1,1]
+#outputEnsembleFile = Path(__file__).parent / 'predictions'  /'final'/ 'ensemble' / 'ensembleCell.csv'
+
+
+
+#Coeffs Ensemble
+#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99.csv', Path(__file__).parent / 'predictions' /'final'/'DL'/ 'DLrun1.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv']
+#predictionWeights = [1,1,1, 1]
+#outputEnsembleFile = Path(__file__).parent / 'predictions'  /'final'/ 'ensemble' / 'ensemble.csv'
+
 
 
 ##########################
