@@ -35,7 +35,7 @@ from sklearn import tree
 
 ###########PARAMETERS
 omicsType = 'crispr' #ge (gene expression), crispr, proteomics
-modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
+modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 106 #increase if you want to start the hyperparameter optimization process anew
