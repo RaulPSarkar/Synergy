@@ -13,11 +13,11 @@ from src.graphFunctions import regressionGraphs, barplot, stackedbarplot
 runStackedGraphs = False #whether to generate stacked graphs
 
 #Regular
-#predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensemble.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
-#predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
-#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
-#modelStatsFolder =  Path(__file__).parent / 'results' / 'regular'
-#groupedBars = False
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensemble.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
+predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
+saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
+modelStatsFolder =  Path(__file__).parent / 'results' / 'regular'
+groupedBars = False
 
 
 #Shuffled
@@ -29,13 +29,13 @@ runStackedGraphs = False #whether to generate stacked graphs
 
 
 #Misc Results
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv']
-predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs']
-mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF']
-type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs']
-saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
-modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
-groupedBars = True
+#predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv']
+#predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs']
+#mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF']
+#type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs']
+#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
+#modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
+#groupedBars = True
 
 
 
@@ -135,10 +135,10 @@ roundedOld = fullStatsDF.round(3)
 fullStatsDF = fullStatsDF.set_index('name')
 rounded = fullStatsDF.round(3)
 
-roundedOld['mainModel'] = mainModel
-roundedOld['type'] = type
+if(groupedBars):
+    roundedOld['mainModel'] = mainModel
+    roundedOld['type'] = type
 
-print(roundedOld)
 
 finalNames =['Model']
 for idk in stackedResultNames:
