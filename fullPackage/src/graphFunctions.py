@@ -148,4 +148,3 @@ def stackedbarplot(df, saveGraphsFolder, metricName):
         os.mkdir(saveGraphsFolder / 'IC50')
     plt.savefig(saveGraphsFolder / 'IC50' / fileName)
     plt.close()
-

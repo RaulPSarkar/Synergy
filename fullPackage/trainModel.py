@@ -35,7 +35,7 @@ from sklearn import tree
 
 ###########PARAMETERS
 omicsType = 'crispr' #ge (gene expression), crispr, proteomics
-modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
+modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
 tunerRun = 106 #increase if you want to start the hyperparameter optimization process anew
@@ -793,17 +793,18 @@ def trainTestModel(sens=False, sensRun=0):
 
                 # Build the model with the optimal hyperparameters and train it on the data for 65 epochs
                 model = tuner.hypermodel.build(bestHP)
-                history = model.fit(XTrain, y_train, epochs=65, validation_split=0.2)
+                history = model.fit(XTrain, y_train, epochs=63, validation_split=0.2)
 
-                valLossPerEpoch = history.history['val_loss']
-                bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
-                print('Best epoch: %d' % (bestEpoch,))
-                hypermodel = tuner.hypermodel.build(bestHP)
+                #valLossPerEpoch = history.history['val_loss']
+                #bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
+                #print('Best epoch: %d' % (bestEpoch,))
+                #hypermodel = tuner.hypermodel.build(bestHP)
                 # Retrain the model -> i could just save the model instead maybe?
-                hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
+                #hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
                 #####################################################
                 ######################################################
-                ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
+                #ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
+                ypred = np.squeeze(history.predict(XTest, batch_size=64))
 
 
 
