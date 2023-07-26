@@ -13,11 +13,11 @@ from src.graphFunctions import regressionGraphs, barplot, stackedbarplot
 runStackedGraphs = False #whether to generate stacked graphs
 
 #Regular
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensemble.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
-predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
-saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
-modelStatsFolder =  Path(__file__).parent / 'results' / 'regular'
-groupedBars = False
+#predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensemble.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
+#predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
+#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regular'
+#modelStatsFolder =  Path(__file__).parent / 'results' / 'regular'
+#groupedBars = False
 
 
 #Shuffled
@@ -40,13 +40,13 @@ groupedBars = False
 
 
 #Omics Type
-#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv',  Path(__file__).parent / 'predictions' /'temp' /'lgbm0Proteomics.csv']
-#predictionNames = ['LGBM Coeffs+Single CRISPR', 'LGBM Coeffs+Single Proteomics']
-#mainModel = ['LGBM', 'LGBM']
-#type = ['CRISPR-KO', 'Proteomics']
-#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'omicstype'
-#modelStatsFolder =  Path(__file__).parent / 'results' / 'omicstype'
-#groupedBars = True
+predictionPaths = [Path(__file__).parent / 'predictions' /'temp'/ 'lgbm0GE.csv',Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv',  Path(__file__).parent / 'predictions' /'temp' /'lgbm0Proteomics.csv']
+predictionNames = ['LGBM Coeffs+Single GE', 'LGBM Coeffs+Single CRISPR', 'LGBM Coeffs+Single Proteomics']
+mainModel = ['LGBM', 'LGBM', 'LGBM']
+type = ['Transcriptomics', 'CRISPR-KO', 'Proteomics']
+saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'omicstype'
+modelStatsFolder =  Path(__file__).parent / 'results' / 'omicstype'
+groupedBars = True
 
 
 #Drug CV
