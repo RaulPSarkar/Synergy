@@ -51,7 +51,7 @@ useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 useCellLinePatientData = False #cell line patient age, gender and ethnicity
 useCancerType = False #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
-sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
+sensitivityAnalysisMode = True #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
 #the small fractions of the full dataset (WITH resampling), and saves each result
