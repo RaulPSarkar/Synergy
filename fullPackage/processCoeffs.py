@@ -13,7 +13,7 @@ import matplotlib
 makeGraphsInstead = False
 graphsFolder =  Path(__file__).parent / 'graphs' / 'coeffsThreshold'
 processWithThresholdsBelow = True #whether to do any processing of which genes to keep (with params below)
-minimumNonNull = 20 #threshold of minimum amount of non-null coefficients for gene to be maintained
+minimumNonNull = 23 #threshold of minimum amount of non-null coefficients for gene to be maintained
 coefficientValueThreshold = 0.02
 minimumNumberAbove = 0#3 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
 coefficientValueSecondThreshold = 0.08 #a second threshold, similar to the previous one

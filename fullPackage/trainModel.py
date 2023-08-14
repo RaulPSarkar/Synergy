@@ -38,7 +38,7 @@ omicsType = 'ge' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 114 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -49,11 +49,11 @@ useCancerDrivers = False #whether to use cancer driver genes for coefficient bra
 useSingleAgentResponse = True #adds single agent data  
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
-sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 useCellLinePatientData = False #cell line patient age, gender and ethnicity
-useCancerType = True #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
+useCancerType = False #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
+sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
-sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #trains the model with each of
+sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
 #the small fractions of the full dataset (WITH resampling), and saves each result
 sensitivityIterations = 5 #number of times to repeat the power analysis experiment
 stratifiedSampling = False # whether to stratify samples for power analysis
