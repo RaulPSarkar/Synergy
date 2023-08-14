@@ -19,10 +19,11 @@ addSingleAgentData = True
 pancreasPath = Path(__file__).parent / "datasets/pancreas_anchor_combo.csv.gz"
 colonPath = Path(__file__).parent / "datasets/colon_anchor_combo.csv.gz"
 breastPath = Path(__file__).parent / "datasets/breast_anchor_combo.csv.gz"
+cellLineData = Path(__file__).parent / "datasets/cellLineData.csv" #used to add cancer subtype information
 drugCached = Path(__file__).parent / "datasets/drug2smiles.txt"
-omicsData = Path(__file__).parent / "datasets/transcriptomics.csv.gz"
+omicsData = Path(__file__).parent / "datasets/crispr.csv.gz"
 singleAgent = Path(__file__).parent / "datasets/drugresponse.csv"
-outputFile = Path(__file__).parent / "datasets/processedGeneExpressionwithSmile.csv"
+outputFile = Path(__file__).parent / "datasets/processedCRISPRwithSingle.csv"
 outputSMILEStoFingerprints = Path(__file__).parent / "datasets/smiles2fingerprints.csv"
 outputSMILEStoShuffledFingerprints = Path(__file__).parent / "datasets/smiles2shuffledfingerprints.csv"
 outputSMILEStoDummyFingerprints = Path(__file__).parent / "datasets/smiles2dummyfingerprints.csv"
@@ -41,6 +42,8 @@ pancreas = pd.read_csv(pancreasPath)
 colon = pd.read_csv(colonPath)
 breast = pd.read_csv(breastPath)
 full = pd.concat([pancreas,colon, breast], axis=0)
+cellLineData = pd.read_csv(cellLineData)
+print(cellLineData)
 #JOINS ALL DATASETS
 
 
@@ -105,7 +108,7 @@ out2 = out.merge(smilesTable, left_on='Anchor Name', right_on='drug')
 
 
 
-out2.rename(columns={'Library Name': 'NSC1', 'Anchor Name': 'NSC2', 'SDIM': 'CELLNAME'}, inplace=True)
+out2.rename(columns={'Library Name': 'NSC1', 'Anchor Name': 'NSC2', 'SDIM': 'CELLNAME'}, inplace=True) #this was just for consistency with ALMANAC dataset, not really necessary
 
 out2['GROUP'] = out2['NSC1'] + '_' + out2['NSC2']
 
@@ -117,29 +120,18 @@ crisprT = crispr.T
 #crispr.T.to_csv('transcriptomicsT.csv')
 
 
-####GENERATE A DATAFRAME WITH SINGLE AGENT (IC50) VALUES
-singleAgent = pd.read_csv(singleAgent)
-singleAgent[['ID','Drug', 'GDSC']] = singleAgent['Unnamed: 0'].str.split(';',expand=True)
-singleAgent.drop(['Unnamed: 0', 'ID', 'GDSC'], axis=1, inplace=True)
-singleAgentSIDMCols = singleAgent.columns[:-1]
-#singleAgent = singleAgent.drop_duplicates('Drug', keep='last')
-plz = pd.melt(singleAgent, id_vars='Drug', value_vars=singleAgentSIDMCols)
-plz = plz.dropna(how='any')
-plz = plz.drop_duplicates(subset=['Drug','variable'], keep='last') #because its GDSC2
-#df = pd.pivot(singleAgent, index='Drug', columns='SIDM00023', values='EN_coef')
-#test = pd.wide_to_long(df=singleAgent, stubnames='SIDM', i='Drug', j='Combo') 
-#print(test)
-#THIS CODE IS COMPLETELY IRRELEVANT, I'LL DELETE LATER, IT WAS JUST CAUSE OTHER THING DIDN'T WORK
-######################
 
 
+
+
+out2 = out2.merge(cellLineData, left_on=['CELLNAME'], right_on=['model_id']) 
 #Otherwise there's not enough RAM
 splitOut = np.array_split(out2, splitInto)
 finalDF = []
 for outDF in splitOut:
     print("+1")
     df = crisprT.merge(outDF, on=['CELLNAME'])
-    df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax', 'Library IC50','Library Emax']]
+    df = df[['Tissue', 'CELLNAME', 'NSC1', 'NSC2', 'Anchor Conc', 'SMILES_A', 'SMILES_B', 'GROUP', 'Delta Xmid', 'Delta Emax', 'Library IC50','Library Emax', 'cancer_type_detail', 'gender', 'ethnicity', 'age_at_sampling']]
     finalDF.append(df)
 
 
@@ -159,8 +151,6 @@ if(addSingleAgentData):
     df = pd.merge(df, singleAgent, left_on=['NSC2', 'CELLNAME'], right_on = ['Anch', 'CELL'])
     df.drop(['Anch', 'CELL'], axis=1, inplace=True)
     #df.rename(columns={'NSC1_x': 'NSC1'}, inplace=True)
-    print(df)
-    print(df.columns)
     scaler.fit(df[['Anchor IC50']])
     df[['Anchor IC50']] = scaler.transform(df[['Anchor IC50']])
     scaler.fit(df[['Anchor Emax']])
@@ -177,12 +167,27 @@ dfSuperFinal = mahalanobisFunc(df, ['Delta Xmid', 'Delta Emax'], ['CELLNAME', 'N
 
 
 
+
+dfSuperFinal = dfSuperFinal.fillna(df['age_at_sampling'].mean()) #to replace NaN age values
+
+dfSuperFinal['cancerTypeFactorized'] = pd.factorize(dfSuperFinal['cancer_type_detail'])[0]
+dfSuperFinal['genderFactorized'] = pd.factorize(dfSuperFinal['gender'])[0]
+dfSuperFinal['ethnicityFactorized'] = pd.factorize(dfSuperFinal['ethnicity'])[0]
+
+scaler.fit(dfSuperFinal[['cancerTypeFactorized']])
+dfSuperFinal[['cancerTypeFactorized']] = scaler.transform(dfSuperFinal[['cancerTypeFactorized']])
+scaler.fit(dfSuperFinal[['ethnicityFactorized']])
+dfSuperFinal[['ethnicityFactorized']] = scaler.transform(dfSuperFinal[['ethnicityFactorized']])
+scaler.fit(dfSuperFinal[['age_at_sampling']])
+dfSuperFinal[['ageScaled']] = scaler.transform(dfSuperFinal[['age_at_sampling']])
+
 print(dfSuperFinal)
 
 
 
 dfSuperFinal['Experiment'] = dfSuperFinal.index #this is used as index to reorganize later
 dfSuperFinal = dfSuperFinal.sample(frac=1)
+
 
 
 

@@ -34,25 +34,29 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-omicsType = 'crispr' #ge (gene expression), crispr, proteomics
-modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
+omicsType = 'ge' #ge (gene expression), crispr, proteomics
+modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 106 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 114 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
 useThresholdsForCoefficients = True #whether to use coefficient thresholds for coefficient branch
-useLandmarkForCoefficients = False #whether to use landmark cancer genes for coefficient branch
+useLandmarkForCoefficients = False #whether to use landmark (L1000) cancer genes for coefficient branch
 useTopMutatedList = False #whether to use top 3000 most mutated cancer genes for coefficient branch
 useCancerDrivers = False #whether to use cancer driver genes for coefficient branch
 useSingleAgentResponse = True #adds single agent data  
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
+useCellLinePatientData = False #cell line patient age, gender and ethnicity
+useCancerType = True #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #trains the model with each of
 #the small fractions of the full dataset (WITH resampling), and saves each result
+sensitivityIterations = 5 #number of times to repeat the power analysis experiment
+stratifiedSampling = False # whether to stratify samples for power analysis
 
 sizePrints = 1024
 
@@ -65,9 +69,9 @@ geneExpressionWithSingle = Path(__file__).parent / 'datasets/processedGeneExpres
 proteomicsProcessed = Path(__file__).parent / 'datasets/processedProteomics.csv'
 proteomicsWithSingle = Path(__file__).parent / 'datasets/processedProteomicswithSingle.csv'
 
-crisprOmics = Path(__file__).parent / 'datasets/crispr.csv.gz'
-transcriptomics = Path(__file__).parent / 'datasets/transcriptomics.csv.gz'
-proteomics = Path(__file__).parent / 'datasets/proteomics.csv.gz'
+crisprOmics = Path(__file__).parent / 'datasets/crisprProcessed.csv.gz'
+transcriptomics = Path(__file__).parent / 'datasets/transcriptomicsProcessed.csv.gz'
+proteomics = Path(__file__).parent / 'datasets/proteomicsProcessed.csv.gz'
 
 fingerprints = Path(__file__).parent / 'datasets/smiles2fingerprints.csv'
 #fingerprints = Path(__file__).parent / 'datasets/smiles2shuffledfingerprints.csv'
@@ -75,15 +79,14 @@ landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 top3000MutatedList = Path(__file__).parent / 'datasets/top15mutatedgenes.tsv'
 cancerDriverGenes = Path(__file__).parent / 'datasets/cancerDriverGenes.csv'
 outputPredictions = Path(__file__).parent / 'predictions'
-#tunerDirectory = Path(__file__).parent / 'tuner'
-tunerDirectory = Path('W:\Media') / 'tuner'
+tunerDirectory = Path(__file__).parent / 'tuner'
+#tunerDirectory = Path('W:\Media') / 'tuner'
 coeffs = Path(__file__).parent / 'datasets/coefsProcessed.csv'
 coeffsWithThresholds = Path(__file__).parent / 'datasets/coefsProcessedWithThreshold.csv'
 
 
 ##########################
 ##########################
-
 
 
 
@@ -200,6 +203,8 @@ coeffs = args.coeffs
 top3000MutatedList = pd.read_csv(top3000MutatedList,sep='\t', index_col=0)
 cancerDriverGenes = pd.read_csv(cancerDriverGenes)
 
+
+
 if(omicsType=='ge'):
     omics = transcriptomics
     if(useSingleAgentResponse):
@@ -233,7 +238,8 @@ elif(modelName.strip()=='dlFull'):
     useCoeffs = True
     useDrugs = True
 elif(modelName.strip()=='dlCNN'):
-    useCoeffs = True
+    pass
+    #useCoeffs = True
     #useDrugs = False
     #why not?
 elif(modelName.strip()=='dlMixed'):
@@ -253,7 +259,6 @@ if not os.path.exists(outputPredictions):
 
 data = pd.read_csv(data)
 omics = pd.read_csv(omics, index_col=0)
-omics = omics.fillna(0)
 
 fingerprints = pd.read_csv(fingerprints)
 landmarkList = pd.read_csv(landmarkList,sep='\t')
@@ -288,9 +293,12 @@ def buildModel(hp):
                               cnnActivation=hp.Choice('cnnActivation',['relu','prelu', 'leakyrelu']),
                               sizeOmics = sizeOmics,
                               useDrugs = useDrugs,
+                              useCoeffs=useCoeffs,
+                              coeffsDim = sizeCoeffs,
                               drugDim = sizePrints,
                               omicsOutputNeurons=hp.Choice('omicsOutputNeurons', [16,32,48,64,128]),
                               drugHlayerSizes=hp.Choice('drugHlayerSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                              coeffsHlayerSizes=hp.Choice('coeffsHlayerSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                               hiddenDropout=hp.Choice('hiddenDropout', [0.1, 0.2,0.3,0.4,0.5]),
                               filters=hp.Choice('filters', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
                               secondFilter=hp.Choice('secondFilter', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
@@ -446,7 +454,7 @@ def datasetToInput(data, omics, drugs, coeffs):
     if(useLandmarkForCoefficients or useTopMutatedList or useCancerDrivers):
         coeffsFinal = coeffs.T[interceptionCoeffs]
     else:
-        if(modelName=='dlCNN' or modelName=='dlMixed'):
+        if(modelName=='dlMixed'):
             for gene in interceptionGenes:
                 if gene in coeffs.index:
                     interceptionCoeffs.append(gene)
@@ -506,13 +514,20 @@ groupDrugs = fullSet['NSC1'] + fullSet['NSC2']
 groupCell = fullSet['CELLNAME']
 
 #supp is supplemental data (tissue type, id, etc, that will not be kept as an input)
-supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment' ] ]
+supp = fullSet[ ['Tissue', 'Anchor Conc', 'CELLNAME', 'NSC1', 'NSC2', 'Experiment', 'cancer_type_detail', 'gender', 'ethnicity', 'age_at_sampling'] ]
 
 #Taken from https://stackoverflow.com/questions/19071199/drop-columns-whose-name-contains-a-specific-string-from-pandas-dataframe because I'm lazy
 X = fullSet.loc[:,~fullSet.columns.str.startswith('SMILES')]
 X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
-X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment'], axis=1)
+X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment', 'cancer_type_detail', 'gender', 'ethnicity', 'age_at_sampling'], axis=1)
+
+if(not useCellLinePatientData):
+    X = X.drop(['genderFactorized', 'ethnicityFactorized', 'ageScaled'], axis=1)
+if(not useCancerType):
+    X = X.drop(['cancerTypeFactorized'], axis=1)
+
+
 
 hasAnchorSingles=False
 if 'Anchor IC50' in X:
@@ -534,6 +549,8 @@ if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or m
     
 
 print(X)
+
+
 y = fullSet[ ['Delta Xmid', 'Delta Emax' ] ]
 #make this a function maybe
 
@@ -581,25 +598,12 @@ if(modelName=='dlCNN'):
             interceptionGenesB.append(gene)
 
     omicsDF=omicsDFA[interceptionGenes]
-    AcoeffsDF=AcoeffsDF[interceptionGenes]
-    BcoeffsDF=BcoeffsDF[interceptionGenesB]    
+    AcoeffsMixedOmicsDF=AcoeffsDF[interceptionGenes] #these names are getting very confusing
+    BcoeffsMixedOmicsDF=BcoeffsDF[interceptionGenesB]    
     sizeOmics = len(interceptionGenes)
 
 
-    #print(fullAwesomeOmics)
-    #AcoeffsDF = 1 - AcoeffsDF
-    #BcoeffsDF = 1 - BcoeffsDF
-    #AcoeffsDF.columns = omicsDF.columns
-    #BcoeffsDF.columns = omicsDF.columns
-    #omicsModifiedInput = omicsDF * AcoeffsDF * BcoeffsDF
-
-    #if(useDrugs):
-    #    AfingerDF = X.iloc[:, ind: ind+sizePrints]
-    #    ind += sizePrints
-    #    BfingerDF = X.iloc[:, ind: ind+sizePrints]
-
-
-def trainTestModel(sens=False, sensRun=0):
+def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
         #cross validation
     if(crossValidationMode=='drug'):
@@ -668,18 +672,17 @@ def trainTestModel(sens=False, sensRun=0):
                 if(useDrugs):
                     AfingerDFTrain, AfingerDFTest = AfingerDF.iloc[train_index,:],AfingerDF.iloc[test_index,:]
                     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
-                #XTrain = [omicsDFTrain]
-                #XTest = [omicsDFTest]
-                
-                AcoeffsTrain, AcoeffsTest =AcoeffsDF.iloc[train_index,:], AcoeffsDF.iloc[test_index,:]
-                BcoeffsTrain, BcoeffsTest =BcoeffsDF.iloc[train_index,:], BcoeffsDF.iloc[test_index,:]
+                if(useCoeffs):
+                    AcoeffsDFTrain, AcoeffsDFTest = AcoeffsDF.iloc[train_index,:],AcoeffsDF.iloc[test_index,:]
+                    BcoeffsDFTrain, BcoeffsDFTest = BcoeffsDF.iloc[train_index,:],BcoeffsDF.iloc[test_index,:]
 
-                XTrain = np.array( [omicsDFTrain.to_numpy(), AcoeffsTrain.to_numpy(), BcoeffsTrain.to_numpy()] )
-                XTest = np.array( [omicsDFTest.to_numpy(), AcoeffsTest.to_numpy(), BcoeffsTest.to_numpy()] )
+                AcoeffsMixedTrain, AcoeffsMixedTest =AcoeffsMixedOmicsDF.iloc[train_index,:], AcoeffsMixedOmicsDF.iloc[test_index,:]
+                BcoeffsMixedTrain, BcoeffsMixedTest =BcoeffsMixedOmicsDF.iloc[train_index,:], BcoeffsMixedOmicsDF.iloc[test_index,:]
+
+                XTrain = np.array( [omicsDFTrain.to_numpy(), AcoeffsMixedTrain.to_numpy(), BcoeffsMixedTrain.to_numpy()])
+                XTest = np.array( [omicsDFTest.to_numpy(), AcoeffsMixedTest.to_numpy(), BcoeffsMixedTest.to_numpy()] )
 
 
-                #XTrain = fullAwesomeOmics
-                #XTest = fullAwesomeOmics
                 XTrain = tf.reshape(XTrain, [XTrain.shape[1], XTrain.shape[0], XTrain.shape[2]] )
                 XTest = tf.reshape(XTest, [XTest.shape[1], XTest.shape[0], XTest.shape[2]] )
                 if(useSingleAgentResponse):
@@ -692,13 +695,11 @@ def trainTestModel(sens=False, sensRun=0):
                     XTest.append(AfingerDFTest)
                     XTest.append(BfingerDFTest)
 
-                #XTrain = tf.convert_to_tensor(1)
-                #XTest = tf.convert_to_tensor(1)
-                #XTrain = tf.ragged.constant(XTrain)
-                #XTest = tf.ragged.constant(XTest)
-                #XTrain = tf.convert_to_tensor(XTrain)
-                #XTest = tf.convert_to_tensor(XTest)
-
+                if(useCoeffs):
+                    XTrain.append(AcoeffsDFTrain)
+                    XTrain.append(BcoeffsDFTrain)
+                    XTest.append(AcoeffsDFTest)
+                    XTest.append(BcoeffsDFTest)
 
         if(modelName!='base'):
         
@@ -706,7 +707,7 @@ def trainTestModel(sens=False, sensRun=0):
 
             runStringCV = runString + 'fold' + str(index)
             if(sens):
-                runStringCV = runString + 'size' + str(sensRun)
+                runStringCV = runString + 'size' + str(sensRun) + 'it' + str(sensIter)
 
 
             hyperList = []
@@ -748,7 +749,7 @@ def trainTestModel(sens=False, sensRun=0):
 
             
 
-            for hyper in range (saveTopXHyperparametersPerFold):
+            for hyper in range (min(tunerTrials,saveTopXHyperparametersPerFold)):
                 best_hpIter = tuner.get_best_hyperparameters(saveTopXHyperparametersPerFold)[hyper]
                 bestValsDict = best_hpIter.values
                 bestValsDict = {k:[v] for k,v in bestValsDict.items()} #taken from https://stackoverflow.com/questions/57631895/dictionary-to-dataframe-error-if-using-all-scalar-values-you-must-pass-an-ind
@@ -793,19 +794,17 @@ def trainTestModel(sens=False, sensRun=0):
 
                 # Build the model with the optimal hyperparameters and train it on the data for 65 epochs
                 model = tuner.hypermodel.build(bestHP)
-                history = model.fit(XTrain, y_train, epochs=63, validation_split=0.2)
+                history = model.fit(XTrain, y_train, epochs=65, validation_split=0.2)
 
-                #valLossPerEpoch = history.history['val_loss']
-                #bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
-                #print('Best epoch: %d' % (bestEpoch,))
-                #hypermodel = tuner.hypermodel.build(bestHP)
+                valLossPerEpoch = history.history['val_loss']
+                bestEpoch = valLossPerEpoch.index(min(valLossPerEpoch)) + 1
+                print('Best epoch: %d' % (bestEpoch,))
+                hypermodel = tuner.hypermodel.build(bestHP)
                 # Retrain the model -> i could just save the model instead maybe?
-                #hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
+                hypermodel.fit(XTrain, y_train, epochs=bestEpoch, validation_split=0.2)
                 #####################################################
                 ######################################################
-                #ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
-                ypred = np.squeeze(history.predict(XTest, batch_size=64))
-
+                ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
 
 
             df = pd.DataFrame(data={'Experiment': suppTest['Experiment'].values,
@@ -814,6 +813,10 @@ def trainTestModel(sens=False, sensRun=0):
                             'Anchor': suppTest['NSC2'].values,
                             'Tissue': suppTest['Tissue'].values,
                             'Conc': suppTest['Anchor Conc'].values,
+                            'CancerType': suppTest['cancer_type_detail'].values,
+                            'Gender': suppTest['gender'].values,
+                            'Ethnicity': suppTest['ethnicity'].values,
+                            'AgeAtSampling': suppTest['age_at_sampling'].values,
                             'y_trueIC': y_test.iloc[:,0].values,
                             'y_trueEmax': y_test.iloc[:,1].values,
                             'y_predIC': ypred[:,0],
@@ -863,13 +866,20 @@ def trainTestModel(sens=False, sensRun=0):
     finalHPName = modelName + runString + 'hyperParams.csv'
 
     if(sens): 
-        finalName = modelName + runString + str(sensRun) + crossValidationMode + emptyString + '.csv'
-        finalHPName = modelName + runString + str(sensRun) + 'hyperParams.csv'
+        finalName = modelName + str(sensRun) + 'it' + str(sensIter) + '.csv'
+        finalHPName = modelName + str(sensRun) + 'it' + str(sensIter) + 'hyperParams.csv'
 
 
-    outdir = outputPredictions / 'final' / modelName
+    outdir = outputPredictions / 'final'
     if not os.path.exists(outdir):
         os.mkdir(outdir)
+
+    outdir = outdir / modelName
+
+    if(sens):
+        outdir = outdir / 'powerAnalysis'
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
 
 
 
@@ -886,15 +896,21 @@ if(sensitivityAnalysisMode):
     ind = 0
     fullDF = pd.concat([originalY,originalX], axis=1)
 
-    for sampleSize in sensitivitySizeFractions:
-        sampledDF = fullDF.sample(frac=sampleSize, random_state=1)
-        y = sampledDF.iloc[:, :2]
-        X = sampledDF.iloc[:, 2:]
-        print(y)
-        print(X)
-        #X = originalX.sample(frac=sampleSize, random_state=1) 
-        #y = originalY.sample(frac=sampleSize, random_state=1)
-        trainTestModel(sens=True, sensRun=ind)
-        ind += 1
+
+
+    for iteration in range(sensitivityIterations):
+        for sampleSize in sensitivitySizeFractions:
+            if(stratifiedSampling):
+                #Proportionate stratified sampling (by cell line), taken from https://www.geeksforgeeks.org/stratified-sampling-in-pandas/
+                sampledDF = fullDF.groupby('CELLNAME', group_keys=False).apply(lambda x: x.sample(frac=sampleSize))
+                sampledDF = fullDF.sample(frac=1.0) #shuffle just in case
+            else:
+                sampledDF = fullDF.sample(frac=sampleSize)
+            y = sampledDF.iloc[:, :2]
+            X = sampledDF.iloc[:, 2:]
+            print(y)
+            print(X)
+            trainTestModel(sens=True, sensRun=ind, sensIter = iteration)
+            ind += 1
 else:
     trainTestModel()

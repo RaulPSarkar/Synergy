@@ -10,14 +10,14 @@ import matplotlib
 
 ######################
 ######################
-makeGraphsInstead = True
+makeGraphsInstead = False
 graphsFolder =  Path(__file__).parent / 'graphs' / 'coeffsThreshold'
 processWithThresholdsBelow = True #whether to do any processing of which genes to keep (with params below)
-minimumNonNull = 0 #threshold of minimum amount of non-null coefficients for gene to be maintained
+minimumNonNull = 20 #threshold of minimum amount of non-null coefficients for gene to be maintained
 coefficientValueThreshold = 0.02
-minimumNumberAbove = 3 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
+minimumNumberAbove = 0#3 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
 coefficientValueSecondThreshold = 0.08 #a second threshold, similar to the previous one
-minimumSecondNumberAbove = 1 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
+minimumSecondNumberAbove = 0#1 #the minimum number of coefficients that should be over the threshold above (i.e. 3 coefficients should be above 0.01 for the gene to be maintained)
 coeffs = Path(__file__).parent / 'datasets/CoefficientsLasso.csv'
 outputFile = Path(__file__).parent / "datasets/coefsProcessedWithThreshold.csv"
 ######################
@@ -104,6 +104,25 @@ else:
         aboveSecondThresholdFrequency = secondFiltered[abs(secondFiltered) >= coefficientValueSecondThreshold].count(axis=1) #needs to be the absolute value
         thirdFiltered = secondFiltered.loc[aboveSecondThresholdFrequency >= minimumSecondNumberAbove]
         thirdFiltered.to_csv(outputFile)
+
+
+        
+        thirdFilteredSparse = thirdFiltered.replace(0, np.nan)
+        thirdFilteredSparse = thirdFilteredSparse.apply(pd.arrays.SparseArray)
+        dfSparse = df.replace(0, np.nan)
+        dfSparse = dfSparse.apply(pd.arrays.SparseArray)
+
+        
+        print ('\nOriginal Values')
+        print('Mean (non-null values): ' + str(dfSparse.mean(skipna=True).mean() ) )
+        print ('Density: ' + str(dfSparse.sparse.density))
+        print("Number of genes: " + str(dfSparse.shape[0])  + '\n' )
+
+        print ('Post-Processing Values')
+        print('Mean (non-null values): ' + str(thirdFilteredSparse.mean(skipna=True).mean() ) )
+        print ('Density: ' + str(thirdFilteredSparse.sparse.density) )
+        print("Number of genes: " + str(thirdFilteredSparse.shape[0]))
+
 
     else:
         df.to_csv(outputFile)

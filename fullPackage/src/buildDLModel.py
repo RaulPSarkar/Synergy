@@ -184,12 +184,17 @@ def dense_submodel(input_layer, hlayers_sizes='[10]', l1_regularization=0, l2_re
 
 
 
-def cnnOmicsModel(useDrugs=False, omicsOutputNeurons = 64, drugDim=1024, sizeOmics = 0, filters=32, secondFilter=32, kernelSize=3, secondKernel=3, drugHlayerSizes= '[10]',predictorHlayersSizes='[10]', cnnActivation = 'relu', hiddenActivation='relu', initializer='he_normal', hiddenDropout=0, l1=0, l2=0, useSingleAgent = True, learnRate = 0.001):
+def cnnOmicsModel(useDrugs=False, useCoeffs=False, omicsOutputNeurons = 64, drugDim=1024, coeffsDim=0, sizeOmics = 0, filters=32, secondFilter=32, kernelSize=3, secondKernel=3, coeffsHlayerSizes= '[10]',drugHlayerSizes= '[10]',predictorHlayersSizes='[10]', cnnActivation = 'relu', hiddenActivation='relu', initializer='he_normal', hiddenDropout=0, l1=0, l2=0, useSingleAgent = True, learnRate = 0.001):
 
 
 	if(useDrugs):
 		drug1_input = Input(shape=drugDim, name='drugA')
 		drug2_input = Input(shape=drugDim, name='drugB')
+
+	if(useCoeffs):
+		coeffs1_input = Input(shape=coeffsDim, name='coeffsA')
+		coeffs2_input = Input(shape=coeffsDim, name='coeffsB')
+
 
 
 	inputOmicsLayer = Input(shape=(3, sizeOmics))
@@ -212,14 +217,28 @@ def cnnOmicsModel(useDrugs=False, omicsOutputNeurons = 64, drugDim=1024, sizeOmi
 	if(useDrugs):
 		fullInputs.append(drug1_input)
 		fullInputs.append(drug2_input)
+
 		drug_submodel = drug_dense_submodel(drugDim, hlayers_sizes=drugHlayerSizes, l1_regularization=l1,
-									l2_regularization=l2, hidden_activation=hiddenActivation,
-									input_dropout=0, hidden_dropout=hiddenDropout)
+							l2_regularization=l2, hidden_activation=hiddenActivation,
+							input_dropout=0, hidden_dropout=hiddenDropout)
 		drugA = drug_submodel(drug1_input)
 		drugB = drug_submodel(drug2_input)
 
 		inputsForMain.append(drugA)
 		inputsForMain.append(drugB)
+
+	if(useCoeffs):
+		fullInputs.append(coeffs1_input)
+		fullInputs.append(coeffs2_input)
+		coeffs_submodel = drug_dense_submodel(coeffsDim, hlayers_sizes=coeffsHlayerSizes, l1_regularization=l1,
+										l2_regularization=l2, hidden_activation=hiddenActivation,
+										input_dropout=0, hidden_dropout=hiddenDropout, layerName='coeffs_dense_submodel')
+
+		coeffsA = coeffs_submodel(coeffs1_input)
+		coeffsB = coeffs_submodel(coeffs2_input)
+		inputsForMain.append(coeffsA)
+		inputsForMain.append(coeffsB)
+
 
 
 	inputsForMain = concatenate(inputsForMain)
