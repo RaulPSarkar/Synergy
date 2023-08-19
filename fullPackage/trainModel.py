@@ -1,3 +1,4 @@
+import shap
 import pandas as pd
 import sys
 import numpy as np
@@ -38,7 +39,7 @@ omicsType = 'ge' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 1 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 115 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -50,14 +51,14 @@ useSingleAgentResponse = True #adds single agent data
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 useCellLinePatientData = False #cell line patient age, gender and ethnicity
-useCancerType = False #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
-sensitivityAnalysisMode = True #whether to run the script for data size sensitivity analysis.
+useCancerType = True #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
+sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
 #the small fractions of the full dataset (WITH resampling), and saves each result
 sensitivityIterations = 5 #number of times to repeat the power analysis experiment
 stratifiedSampling = False # whether to stratify samples for power analysis
-
+shapAnalysis = False #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
 sizePrints = 1024
 
 
@@ -768,6 +769,19 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 model.fit(X_train, y_train)
                 #print(model.estimators_[0].coef_ )
                 ypred = model.predict(X_test)
+                if(shapAnalysis):
+                    explainer = shap.Explainer(model, X_train)
+                    shapValues = explainer.shap_values(X_test)
+                    print(shapValues[0])
+                    print(shapValues) #should be a matrix
+                    #for local (to point 0)
+                    #https://stackoverflow.com/questions/71599628/how-to-export-shap-local-explanations-to-dataframe
+                    #https://towardsdatascience.com/using-shap-values-to-explain-how-your-machine-learning-model-works-732b3f40e137
+                    #https://github.com/shap/shap/issues/295
+
+                    #SICK (https://github.com/MAIF/shapash)
+                    #https://medium.com/@amitjain2110/shapash-machine-learning-interpretable-understandable-ef74012eb162
+    
 
                 #copied from https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
                 #if(modelName=='rf'):
