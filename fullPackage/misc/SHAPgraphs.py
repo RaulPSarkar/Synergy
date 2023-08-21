@@ -13,7 +13,8 @@ import os
 predictionsDF = Path(__file__).parent / 'predictions/final/lgbm/lgbmrun115regularplusSingleplusCoeffsplusCType.csv' #very important to determine samples used
 shapValuesIC50 = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesIC50.parquet.gzip'
 shapValuesEmax = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesEmax.parquet.gzip'
-filterBy = ['Tissue'] #if wanting local (only SHAP for a certain drug pair/tissue)
+filterColumn = ['Tissue'] #i.e. "Tissue"
+filter = 'Breast' #i.e. "Breast" (only select values of "Breast" for column name "Tissue")
 joinIC50andEmax = False #whether to join these SHAP values onto a single value (useless for now)
 numberOfTopFeatures = 20 #number of most important features to select
 
@@ -21,8 +22,14 @@ numberOfTopFeatures = 20 #number of most important features to select
 ##########################
 
 
-def filterRowsByProperty(property, predictionsDF):
-    pass
+def filterRowsByProperty(filterColumn, filter, predictionsDF, shapDF):
+    columnNames = predictionsDF.index[predictionsDF[filterColumn] == filter].tolist() #select the indexes through supplementary predictions file
+    return shapDF[columnNames]
+
+def selectTopNFeatures(shapDF, n=10):
+    globalValues = shapDF.abs().mean(axis=1)
+    topFeatures = globalValues.sort_values( ascending=False).head(n)
+    return topFeatures
 
 predictionsDF = pd.read_csv(predictionsDF, index_col=0)
 shapValuesIC50 = pd.read_parquet(shapValuesIC50)
@@ -38,5 +45,8 @@ topFeatures = globalValues.sort_values( ascending=False).head(numberOfTopFeature
 #top 10 most important featurees, as determined by mean absolute SHAP
 print(topFeatures)
 
-print("Breast")
+
+shapFiltered = filterRowsByProperty(filterColumn, filter, predictionsDF, shapValuesIC50)
+topFeatures = selectTopNFeatures(shapFiltered, numberOfTopFeatures)
+print(topFeatures)
 
