@@ -486,18 +486,18 @@ def datasetToInput(data, omics, drugs, coeffs):
 
     if(useCoeffs and useDrugs):
         print("Now merging with coeffs A...")
-        setWithDrugA = setWithOmics.merge(coeffsFinalA, left_on='NSC1', right_on='drugA')
+        setWithDrugA = setWithOmics.merge(coeffsFinalA, left_on='NSC1', right_on='drug A')
         print("Now merging with coeffs B...")
-        fullSet = setWithDrugA.merge(coeffsFinalB, left_on='NSC2', right_on='drugB')
+        fullSet = setWithDrugA.merge(coeffsFinalB, left_on='NSC2', right_on='drug B')
         print("Now merging with drug A fingerprint...")
         fullSetA = fullSet.merge(drugs, on='SMILES_A')
         print("Now merging with drug B fingerprint...")
         fullSetB = fullSetA.merge(drugs, left_on='SMILES_B', right_on='SMILES_A')
     elif(useCoeffs):
         print("Now merging with coeffs A...")
-        setWithDrugA = setWithOmics.merge(coeffsFinalA, left_on='NSC1', right_on='drugA')
+        setWithDrugA = setWithOmics.merge(coeffsFinalA, left_on='NSC1', right_on='drug A')
         print("Now merging with coeffs B...")
-        fullSetB = setWithDrugA.merge(coeffsFinalB, left_on='NSC2', right_on='drugB')
+        fullSetB = setWithDrugA.merge(coeffsFinalB, left_on='NSC2', right_on='drug B')
     elif(useDrugs):
         print("Now merging with drug A fingerprint...")
         fullSetA = setWithOmics.merge(drugs, on='SMILES_A')
