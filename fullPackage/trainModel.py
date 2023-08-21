@@ -37,9 +37,10 @@ from sklearn import tree
 ###########PARAMETERS
 omicsType = 'ge' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
-crossValidationMode = 'drug' #drug, cell, regular
+shapAnalysis = True #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
+crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 117 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 115 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -58,7 +59,6 @@ sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3,
 #the small fractions of the full dataset (WITH resampling), and saves each result
 sensitivityIterations = 5 #number of times to repeat the power analysis experiment
 stratifiedSampling = False # whether to stratify samples for power analysis
-shapAnalysis = False #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
 sizePrints = 1024
 
 
@@ -606,6 +606,9 @@ if(modelName=='dlCNN'):
 
 def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
+    shapValueList = []
+    shapValueListEmax = []
+
         #cross validation
     if(crossValidationMode=='drug'):
         gs = GroupShuffleSplit(n_splits=kFold)
@@ -770,11 +773,48 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 #print(model.estimators_[0].coef_ )
                 ypred = model.predict(X_test)
                 if(shapAnalysis):
-                    explainer = shap.Explainer(model, X_train)
-                    shapValues = explainer.shap_values(X_test)
-                    print(shapValues[0])
-                    print(shapValues) #should be a matrix
-                    #for local (to point 0)
+                    
+                    ic50Model = model.estimators_[0]
+                    emaxModel = model.estimators_[1] #this could be done better and less error-prone using a loop, but no
+
+                    #shap has unresolved issues, just gonna cast everything to float
+                    #https://github.com/shap/shap/issues/480
+                    #XTrainCast = X_train.astype(np.float32)
+                    #XTestCast = X_test.astype(np.float32)
+
+                    explainer = shap.Explainer(ic50Model, X_train)
+                    shapValues = explainer.shap_values(X_test, check_additivity=False)
+
+                    explainerEmax = shap.Explainer(emaxModel, X_train)
+                    shapValuesEmax = explainerEmax.shap_values(X_test, check_additivity=False)
+
+
+                    foldShap = []
+                    foldShapEmax = []
+                    
+                    for l in range(len(shapValues)):
+                        tempShap = pd.DataFrame(shapValues[l], index = X.columns)
+                        foldShap.append(tempShap)
+                        tempShapEmax = pd.DataFrame(shapValuesEmax[l], index = X.columns)
+                        foldShapEmax.append(tempShapEmax)
+
+                    saveToShapBaseName = modelName + 'shap'
+                    saveToShapIC = saveToShapBaseName + str(index)+ 'ic.csv'
+                    saveToShapemax = saveToShapBaseName + str(index)+ 'emax.csv'
+
+
+                    foldShap = pd.concat(foldShap, axis=1) #these guys are big, let's save to csv and destroy them for memory management
+                    foldShap.to_csv(outputPredictions / 'temp' / saveToShapIC)
+                    del foldShap #i reconstruct from .csv's above afterward. this is to save memory
+                    foldShapEmax = pd.concat(foldShapEmax, axis=1)
+                    foldShapEmax.to_csv(outputPredictions / 'temp' / saveToShapemax)
+                    del foldShapEmax
+
+
+                    #shapValueList.append(foldShap)
+                    #shapValueListEmax.append(foldShapEmax)
+
+                    #cool links
                     #https://stackoverflow.com/questions/71599628/how-to-export-shap-local-explanations-to-dataframe
                     #https://towardsdatascience.com/using-shap-values-to-explain-how-your-machine-learning-model-works-732b3f40e137
                     #https://github.com/shap/shap/issues/295
@@ -782,20 +822,6 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                     #SICK (https://github.com/MAIF/shapash)
                     #https://medium.com/@amitjain2110/shapash-machine-learning-interpretable-understandable-ef74012eb162
     
-
-                #copied from https://stackoverflow.com/questions/40155128/plot-trees-for-a-random-forest-in-python-with-scikit-learn
-                #if(modelName=='rf'):
-                #    for i in range(3):
-                #        fn=X.columns
-                #        cn=y.columns
-                #        fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (40,40), dpi=1600)
-                #        tree.plot_tree(model.estimators_[0],
-                #                    feature_names = fn, 
-                #                    class_names=cn,
-                #                    filled = True,
-                #                    fontsize=10)
-                #        name = 'rfNew' + str(i) + '.png'
-                #        fig.savefig(name)
 
 
             else:
@@ -880,6 +906,8 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
     finalName = modelName + runString + crossValidationMode + emptyString + '.csv'
     finalHPName = modelName + runString + 'hyperParams.csv'
+    finalNameSHAPic = modelName + runString + 'SHAPvaluesIC50.csv' 
+    finalNameSHAPemax = modelName + runString + 'SHAPvaluesEmax.csv' 
 
     if(sens): 
         finalName = modelName + str(sensRun) + 'it' + str(sensIter) + '.csv'
@@ -905,6 +933,31 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
     print("Best HP values:")
     print(superFinalHyperDF)
+    if(shapAnalysis):
+
+
+        shapICList = []
+        shapEmaxList = []
+
+        for q in range(kFold):
+            icName = saveToShapBaseName + str(q) + 'ic.csv'
+            emaxName = saveToShapBaseName + str(q) + 'emax.csv'
+            shapDirIC = outputPredictions / 'temp' / icName
+            shapDirEmax = outputPredictions / 'temp' / emaxName
+        
+            shapIC = pd.read_csv(shapDirIC, index_col=0)
+            shapEmax = pd.read_csv(shapDirEmax, index_col=0)
+            print("SHAP IC50:")
+            print(shapIC)
+            shapICList.append(shapIC)
+            shapEmaxList.append(shapEmax)
+
+        shapICList = pd.concat(shapICList, axis=1)
+        shapICList.to_csv(outdir / finalNameSHAPic)
+        
+        shapEmaxList = pd.concat(shapEmaxList, axis=1)
+        shapEmaxList.to_csv(outdir / finalNameSHAPemax)
+
 
 if(sensitivityAnalysisMode):
     originalX = X
