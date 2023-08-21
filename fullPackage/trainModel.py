@@ -37,10 +37,10 @@ from sklearn import tree
 ###########PARAMETERS
 omicsType = 'ge' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
-shapAnalysis = True #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
-crossValidationMode = 'regular' #drug, cell, regular
+shapAnalysis = False #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
+crossValidationMode = 'drug' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 115 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 117 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -474,10 +474,10 @@ def datasetToInput(data, omics, drugs, coeffs):
     coeffsFinal = coeffsFinal[coeffsFinal['drug'].isin(listOfDrugs)]
 
     #this is just to distinguish which genes come from which drug (or if they come from the omics dataset)
-    coeffsFinalA = coeffsFinal.add_suffix('Alist')
-    coeffsFinalB = coeffsFinal.add_suffix('Blist')
-    coeffsFinalA = coeffsFinalA.rename(columns={'drugAlist': 'drugA'})
-    coeffsFinalB = coeffsFinalB.rename(columns={'drugBlist': 'drugB'})
+    coeffsFinalA = coeffsFinal.add_suffix(' A')
+    coeffsFinalB = coeffsFinal.add_suffix(' B')
+    #coeffsFinalA = coeffsFinalA.rename(columns={'drug Alist': 'drugA'})
+    #coeffsFinalB = coeffsFinalB.rename(columns={'drug Blist': 'drugB'})
 
 
 
@@ -906,8 +906,8 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
     finalName = modelName + runString + crossValidationMode + emptyString + '.csv'
     finalHPName = modelName + runString + 'hyperParams.csv'
-    finalNameSHAPic = modelName + runString + 'SHAPvaluesIC50.csv' 
-    finalNameSHAPemax = modelName + runString + 'SHAPvaluesEmax.csv' 
+    finalNameSHAPic = modelName + runString + 'SHAPvaluesIC50.parquet.gzip' 
+    finalNameSHAPemax = modelName + runString + 'SHAPvaluesEmax.parquet.gzip' 
 
     if(sens): 
         finalName = modelName + str(sensRun) + 'it' + str(sensIter) + '.csv'
@@ -953,10 +953,10 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
             shapEmaxList.append(shapEmax)
 
         shapICList = pd.concat(shapICList, axis=1)
-        shapICList.to_csv(outdir / finalNameSHAPic)
+        shapICList.to_parquet(outdir / finalNameSHAPic, compression='gzip') #to parquet since these things are huge
         
         shapEmaxList = pd.concat(shapEmaxList, axis=1)
-        shapEmaxList.to_csv(outdir / finalNameSHAPemax)
+        shapEmaxList.to_parquet(outdir / finalNameSHAPemax, compression='gzip')
 
 
 if(sensitivityAnalysisMode):
