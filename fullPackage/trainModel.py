@@ -37,9 +37,9 @@ from sklearn import tree
 ###########PARAMETERS
 omicsType = 'ge' #ge (gene expression), crispr, proteomics
 modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
-crossValidationMode = 'regular' #drug, cell, regular
+crossValidationMode = 'drug' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 115 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 117 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -872,6 +872,8 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
         emptyString += 'plusCoeffs'
     if(useDrugs):
         emptyString += 'plusDrugs'
+    if(useCancerType):
+        emptyString += 'plusCType'
 
 
     totalPreds = pd.concat(fullPredictions, axis=0)

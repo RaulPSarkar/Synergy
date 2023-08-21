@@ -13,8 +13,9 @@ import os
 ##########################
 ##########################
 #Change
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun0.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun0.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun0.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv']
-predictionNames = ['Baseline', 'EN', 'LGBM', 'XGBoost', 'SVR']
+groupingType = 'pair' #lib (library drug only), pair (drug pairs)
+predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv']
+predictionNames = ['LGBM']
 graphsFolder =  Path(__file__).parent / 'graphs' / 'groupedRegression'
 topXGraphs = 3 #How many top x best/worst library drug graphs to generate
 ##########################
@@ -56,15 +57,26 @@ for j in predictionPaths:
     df[['Cellname', 'Library', 'Anchor']]
 
     x = pd.DataFrame()
-    x = df.groupby('Library').apply(regress, 'y_predIC', ['y_trueIC'])
+    if(groupingType=='lib'):
+        x = df.groupby('Library').apply(regress, 'y_predIC', ['y_trueIC'])
+    elif(groupingType=='pair'):
+        x = df.groupby(['Library', 'Anchor']).apply(regress, 'y_predIC', ['y_trueIC'])
     x.name = modelName
     whiskerData.append(x)
     
     topLibrary = x.sort_values( ascending=False)
-
+    print(topLibrary)
+    print(topLibrary.index)
+    print(topLibrary.index[0])
+    print(topLibrary.index[0][1])
 
     xEmax = pd.DataFrame()
-    xEmax = df.groupby('Library').apply(regress, 'y_predEmax', ['y_trueEmax'])
+
+    if(groupingType=='lib'):
+        xEmax = df.groupby('Library').apply(regress, 'y_predIC', ['y_trueIC'])
+    elif(groupingType=='pair'):
+        xEmax = df.groupby(['Library', 'Anchor']).apply(regress, 'y_predIC', ['y_trueIC'])
+
     xEmax.name = modelName
     whiskerDataEmax.append(xEmax)
     
@@ -80,7 +92,13 @@ for j in predictionPaths:
             if(pos=='worst'):
                 index=-i-1
             
-            selectedDF = df.loc[df['Library'] == topLibrary.index[index] ]
+            if(groupingType=='lib'):
+                selectedDF = df.loc[df['Library'] == topLibrary.index[index] ]
+            elif(groupingType=='pair'):
+                selectedDF = df.loc[df['Library'] == topLibrary.index[index][0] ]
+                selectedDF = selectedDF.loc[df['Anchor'] == topLibrary.index[index][1] ]
+
+
             plot = sns.regplot(data=selectedDF, x="y_trueIC", y="y_predIC", scatter_kws={"color": "grey"}, line_kws={"color": "orange"})
             slope, intercept, r, p, sterr = scipy.stats.linregress(x=plot.get_lines()[0].get_xdata(),
                                                             y=plot.get_lines()[0].get_ydata())
@@ -90,7 +108,11 @@ for j in predictionPaths:
             plt.axvline(x=0, linewidth=1, c=".3", linestyle='-')
             plt.xlabel('True ΔIC50', size=36)
             plt.ylabel('Predicted ΔIC50', size=36)
-            plt.title(modelName + ' Predictions using ' + topLibrary.index[index] + ' as Library Drug', size=54)
+            if(groupingType=='lib'):
+                plt.title(modelName + ' Predictions using ' + topLibrary.index[index] + ' as Library Drug', size=54)
+            elif(groupingType=='pair'):
+                plt.title(modelName + ' Predictions using ' + topLibrary.index[index][0] + ' as Library and ' + topLibrary.index[index][1] + ' as Anchor Drug', size=54)
+
             ax = plt.gca()
             ax.tick_params(axis='x', labelsize=40)
             ax.tick_params(axis='y', labelsize=40)
@@ -103,7 +125,19 @@ for j in predictionPaths:
             plt.savefig(graphsFolder / 'IC50' / fileName)
             plt.close()
 
-            selectedDF = df.loc[df['Library'] == topLibraryEmax.index[index] ]
+            if(groupingType=='lib'):
+                selectedDF = df.loc[df['Library'] == topLibrary.index[index] ]
+            elif(groupingType=='pair'):
+                selectedDF = df.loc[df['Library'] == topLibrary.index[index][0] ]
+                selectedDF = selectedDF.loc[df['Anchor'] == topLibrary.index[index][1] ]
+
+            if(groupingType=='lib'):
+                selectedDF = df.loc[df['Library'] == topLibraryEmax.index[index] ]
+            elif(groupingType=='pair'):
+                selectedDF = df.loc[df['Library'] == topLibraryEmax.index[index][0] ] #select only rows with library
+                selectedDF = selectedDF.loc[df['Anchor'] == topLibraryEmax.index[index][1] ] #and then select only rows with anchor
+
+
             plot = sns.regplot(data=selectedDF, x="y_trueEmax", y="y_predEmax", scatter_kws={"color": "grey"}, line_kws={"color": "orange"})
             slope, intercept, r, p, sterr = scipy.stats.linregress(x=plot.get_lines()[0].get_xdata(),
                                                             y=plot.get_lines()[0].get_ydata())
@@ -113,7 +147,12 @@ for j in predictionPaths:
             plt.axvline(x=0, linewidth=1, c=".3", linestyle='-')
             plt.xlabel('True ΔEmax', size=36)
             plt.ylabel('Predicted ΔEmax', size=36)
-            plt.title(modelName + ' Predictions using ' + topLibraryEmax.index[index] + ' as Library Drug', size=54)
+            if(groupingType=='lib'):
+                plt.title(modelName + ' Predictions using ' + topLibraryEmax.index[index] + ' as Library Drug', size=54)
+            elif(groupingType=='pair'):
+                plt.title(modelName + ' Predictions using ' + topLibraryEmax.index[index][0] + ' as Library and ' + topLibraryEmax.index[index][1] + ' as Anchor Drug', size=54)
+
+
             ax = plt.gca()
             ax.tick_params(axis='x', labelsize=40)
             ax.tick_params(axis='y', labelsize=40)

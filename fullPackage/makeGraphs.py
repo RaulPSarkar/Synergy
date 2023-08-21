@@ -29,10 +29,10 @@ runStackedGraphs = False #whether to generate stacked graphs
 
 
 #Misc Results
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv', Path(__file__).parent / 'predictions' /'temp' /'dlCNN0.csv']
-predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs', 'DL CNN']
-mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF', 'DL']
-type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs', 'CNN']
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv', Path(__file__).parent / 'predictions' /'temp' /'dlCNN0.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions'  /'final'/'lgbm'/'lgbmrun116cellplusSingleplusCoeffsplusCType.csv',]
+predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs', 'DL CNN', 'LGBM CancerType', 'LGBM Cell']
+mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF', 'DL', 'LGBM', 'LGBM']
+type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs', 'CNN', 'CancerType', 'Cell']
 saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
 modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
 groupedBars = True
@@ -40,13 +40,13 @@ groupedBars = True
 
 
 #Omics Type
-predictionPaths = [Path(__file__).parent / 'predictions' /'temp'/ 'lgbm0GE.csv',Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv',  Path(__file__).parent / 'predictions' /'temp' /'lgbm0Proteomics.csv']
-predictionNames = ['LGBM Coeffs+Single GE', 'LGBM Coeffs+Single CRISPR', 'LGBM Coeffs+Single Proteomics']
-mainModel = ['LGBM', 'LGBM', 'LGBM']
-type = ['Transcriptomics', 'CRISPR-KO', 'Proteomics']
-saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'omicstype'
-modelStatsFolder =  Path(__file__).parent / 'results' / 'omicstype'
-groupedBars = True
+#predictionPaths = [Path(__file__).parent / 'predictions' /'temp'/ 'lgbm0GE.csv',Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv',  Path(__file__).parent / 'predictions' /'temp' /'lgbm0Proteomics.csv']
+#predictionNames = ['LGBM Coeffs+Single GE', 'LGBM Coeffs+Single CRISPR', 'LGBM Coeffs+Single Proteomics']
+#mainModel = ['LGBM', 'LGBM', 'LGBM']
+#type = ['Transcriptomics', 'CRISPR-KO', 'Proteomics']
+#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'omicstype'
+#modelStatsFolder =  Path(__file__).parent / 'results' / 'omicstype'
+#groupedBars = True
 
 
 #Drug CV
