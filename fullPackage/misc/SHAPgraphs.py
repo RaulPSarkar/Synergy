@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import os
+import seaborn as sns
 #####################################################
 #WARNING: YOU NEED TO "pip install fastparquet" TO RUN THIS!
 #####################################################
@@ -10,7 +11,7 @@ import os
 ##########################
 ##########################
 
-predictionsDF = Path(__file__).parent / 'predictions/final/lgbm/lgbmrun115regularplusSingleplusCoeffsplusCType.csv' #very important to determine samples used
+predictionsDF = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115regularplusSingleplusCoeffsplusCType.csv' #very important to determine samples used
 shapValuesIC50 = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesIC50.parquet.gzip'
 shapValuesEmax = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesEmax.parquet.gzip'
 filterColumn = ['Tissue'] #i.e. "Tissue"
@@ -49,4 +50,7 @@ print(topFeatures)
 shapFiltered = filterRowsByProperty(filterColumn, filter, predictionsDF, shapValuesIC50)
 topFeatures = selectTopNFeatures(shapFiltered, numberOfTopFeatures)
 print(topFeatures)
+
+topFeatures['Name'] = topFeatures.index
+sns.barplot(data=topFeatures, x="Name", y="body_mass_g")
 
