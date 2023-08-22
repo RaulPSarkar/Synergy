@@ -14,7 +14,7 @@ import seaborn as sns
 predictionsDF = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115regularplusSingleplusCoeffsplusCType.csv' #very important to determine samples used
 shapValuesIC50 = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesIC50.parquet.gzip'
 shapValuesEmax = Path(__file__).parent / '../predictions/final/lgbm/lgbmrun115SHAPvaluesEmax.parquet.gzip'
-filterColumn = ['Tissue'] #i.e. "Tissue"
+filterColumn = 'Tissue' #i.e. "Tissue"
 filter = 'Breast' #i.e. "Breast" (only select values of "Breast" for column name "Tissue")
 joinIC50andEmax = False #whether to join these SHAP values onto a single value (useless for now)
 numberOfTopFeatures = 20 #number of most important features to select
