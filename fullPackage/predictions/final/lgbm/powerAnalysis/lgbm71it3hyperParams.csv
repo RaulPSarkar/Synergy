@@ -1,0 +1,4 @@
+n_estimators,learning_rate,max_depth,min_child_weight,min_split_gain,subsample,subsample_freq,fold,rank
+3000,0.1,7,4,1.2966986370687454,0.7703857500702138,5,1,1
+1810,0.1,8,3,0.8620390188554484,0.6,1,1,2
+3000,0.1,11,5,0.0,0.6,5,1,3
