@@ -12,8 +12,9 @@ from tensorflow import keras
 
 #predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun70regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun71regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun72regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun73regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun74regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun75regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun76regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun77regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun78regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun79regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun710regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun711regularplusDrugs.csv']
 #sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #sizes used for training (used to plot the model)
-predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun73regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun74regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun75regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun76regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun77regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun78regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun79regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun710regularplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'lgbmrun711regularplusDrugs.csv']
-sensitivitySizeFractions = [0.125, 0.17, 0.25, 0.375, 0.5, 0.625, 0.75, 0.85, 1] #sizes used for training (used to plot the model)
+predictionBasePath = Path(__file__).parent / 'predictions' / 'final' / 'lgbm' / 'powerAnalysis'
+sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
+totalIterations = 3 #number of iterations on which power analysis was done
 
 resultsFolder =  Path(__file__).parent / 'results' / 'sens'
 graphsFolder =  Path(__file__).parent / 'graphs' / 'sens'
@@ -29,36 +30,53 @@ graphsFolder =  Path(__file__).parent / 'graphs' / 'sens'
 ##############################################
 counter = 0
 
+
+it = 0
+count = 0
+
 fullStatsDF = [] 
 
-for j in predictionPaths:
-
-    pred = pd.read_csv(j)
-    pred = pred.dropna(subset=['y_trueIC','y_predIC','y_trueEmax','y_predEmax'])
-    #NAs dropped (they shouldn't exist) just in case the baseline has never seen the test drug pair
-
-    modelName = sensitivitySizeFractions[counter]
-    counter += 1
+for i in range(totalIterations):
 
 
+    for j in range( len(sensitivitySizeFractions) ):
 
-    rhoEmax, p = spearmanr(pred['y_trueEmax'], pred['y_predEmax'])
-    rhoIC50, p = spearmanr(pred['y_trueIC'], pred['y_predIC'])
-    pearsonIC50, p = pearsonr(pred['y_trueIC'], pred['y_predIC'])
-    pearsonEmax, p = pearsonr(pred['y_trueEmax'], pred['y_predEmax'])
-    r2IC50 = r2_score(pred['y_trueIC'], pred['y_predIC'])
-    r2Emax = r2_score(pred['y_trueEmax'], pred['y_predEmax'])
-    mseIC50 = mean_squared_error(pred['y_trueIC'], pred['y_predIC'])
-    mseEmax = mean_squared_error(pred['y_trueEmax'], pred['y_predEmax'])
-    rho, p = spearmanr(pred[['y_trueIC', 'y_trueEmax']], pred[['y_predIC', 'y_predEmax']], axis=None)
-    r2 = r2_score(pred[['y_trueIC', 'y_trueEmax']], pred[['y_predIC', 'y_predEmax']])
 
-    ar = [modelName, pearsonIC50, rhoIC50, r2IC50, mseIC50, pearsonEmax, rhoEmax, r2Emax, mseEmax]
-    df = pd.DataFrame(data=[ar], columns=['name', 'Pearson IC50', 'Spearman IC50', 'R2 IC50', 'MSE IC50', 'Pearson Emax',  'Spearman Emax', 'R2 Emax', 'MSE Emax'])
-    fullStatsDF.append(df)
-    #df.to_csv(Path(__file__).parent / 'multiResults.csv', index=False, header=False)
+        file =  'lgbm' + str(count) + 'it' + str(it) + '.csv'
+        fullFile = predictionBasePath / file
+        print(fullFile)
+        pred = pd.read_csv(fullFile)
+        pred = pred.dropna(subset=['y_trueIC','y_predIC','y_trueEmax','y_predEmax'])
+        #NAs dropped (they shouldn't exist) just in case the baseline has never seen the test drug pair
+        count+=1
+        modelName = sensitivitySizeFractions[counter]
+        counter += 1
+        if(count%len(sensitivitySizeFractions)==0):
+            it+=1
+            counter=0
 
+
+        if not (count%len(sensitivitySizeFractions)==0 or count%len(sensitivitySizeFractions)==1 or count%len(sensitivitySizeFractions)==2):
+
+            rhoEmax, p = spearmanr(pred['y_trueEmax'], pred['y_predEmax'])
+            rhoIC50, p = spearmanr(pred['y_trueIC'], pred['y_predIC'])
+            pearsonIC50, p = pearsonr(pred['y_trueIC'], pred['y_predIC'])
+            pearsonEmax, p = pearsonr(pred['y_trueEmax'], pred['y_predEmax'])
+            r2IC50 = r2_score(pred['y_trueIC'], pred['y_predIC'])
+            r2Emax = r2_score(pred['y_trueEmax'], pred['y_predEmax'])
+            mseIC50 = mean_squared_error(pred['y_trueIC'], pred['y_predIC'])
+            mseEmax = mean_squared_error(pred['y_trueEmax'], pred['y_predEmax'])
+            rho, p = spearmanr(pred[['y_trueIC', 'y_trueEmax']], pred[['y_predIC', 'y_predEmax']], axis=None)
+            r2 = r2_score(pred[['y_trueIC', 'y_trueEmax']], pred[['y_predIC', 'y_predEmax']])
+
+            ar = [modelName, pearsonIC50, rhoIC50, r2IC50, mseIC50, pearsonEmax, rhoEmax, r2Emax, mseEmax]
+            df = pd.DataFrame(data=[ar], columns=['name', 'Pearson IC50', 'Spearman IC50', 'R2 IC50', 'MSE IC50', 'Pearson Emax',  'Spearman Emax', 'R2 Emax', 'MSE Emax'])
+            fullStatsDF.append(df)
+            
+            
 fullStatsDF = pd.concat(fullStatsDF, axis=0)
+
+
 
 if not os.path.exists(resultsFolder):
     os.mkdir(resultsFolder)
@@ -66,9 +84,7 @@ if not os.path.exists(resultsFolder):
 if not os.path.exists(graphsFolder):
     os.mkdir(graphsFolder)
 
-
-
-fullStatsDF.to_csv(resultsFolder / 'results.csv', index=False)
+fullStatsDF.to_csv(resultsFolder / 'resultsNew.csv', index=False)
 print(fullStatsDF)
 
 
@@ -180,4 +196,4 @@ def fit_and_predict(train_acc, sample_sizes, pred_sample_size):
 
 
 # We use the whole training set to predict the model accuracy
-fit_and_predict(fullStatsDF['Pearson IC50'].to_numpy(), sensitivitySizeFractions, pred_sample_size=2)
+#fit_and_predict(fullStatsDF['Pearson IC50'].to_numpy(), sensitivitySizeFractions, pred_sample_size=2)

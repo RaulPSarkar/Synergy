@@ -33,7 +33,7 @@ sys.path.append("..")
 
 
 
-def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, mixedModel=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
+def buildDL(useCancerType=False, expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, useDrugs=True, useSingleAgent=False, mixedModel=False, expr_hlayers_sizes='[10]', drug_hlayers_sizes='[10]', coeffs_hlayers_sizes='[10]',
                           predictor_hlayers_sizes='[10]', initializer='he_normal', hidden_activation='relu', l1=0,
                           l2=0, input_dropout=0, hidden_dropout=0, learn_rate=0.001):
 	"""Build a multi-input deep learning model with separate feature-encoding subnetworks for expression data, drugA
@@ -52,7 +52,8 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		drug2_input = Input(shape=drug_dim, name='drugB')
 	if(useSingleAgent):
 		singleAgentInput = Input(shape=4, name='singleAgent')
-
+	if(useCancerType):
+		cancerTypeInput = Input(shape=1, name='cancerType')
 
 	expr = dense_submodel(expr_input, hlayers_sizes=expr_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
 	                      hidden_activation=hidden_activation, input_dropout=input_dropout,
@@ -87,6 +88,9 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		fullConcat.append(drugB)
 	if(useSingleAgent):
 		fullConcat.append(singleAgentInput)
+	if(useCancerType):
+		fullConcat.append(cancerTypeInput)
+
 
 
 
@@ -112,6 +116,8 @@ def buildDL( expr_dim=None, drug_dim=None, coeffs_dim=None, useCoeffs=False, use
 		fullInputs.append(drug2_input)
 	if(useSingleAgent):
 		fullInputs.append(singleAgentInput)
+	if(useCancerType):
+		fullInputs.append(cancerTypeInput)
 
 
 

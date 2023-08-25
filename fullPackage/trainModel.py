@@ -36,11 +36,11 @@ from sklearn import tree
 
 ###########PARAMETERS
 omicsType = 'ge' #ge (gene expression), crispr, proteomics
-modelName = 'lgbm'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
+modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 shapAnalysis = False #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
-crossValidationMode = 'drug' #drug, cell, regular
+crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 117 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 114 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -52,7 +52,7 @@ useSingleAgentResponse = True #adds single agent data
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 useCellLinePatientData = False #cell line patient age, gender and ethnicity
-useCancerType = True #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
+useCancerType = False #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
@@ -278,6 +278,7 @@ def buildModel(hp):
                 useCoeffs=True,
                 useDrugs=True,
                 useSingleAgent=useSingleAgentResponse,
+                useCancerType=useCancerType,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -315,6 +316,7 @@ def buildModel(hp):
                 useCoeffs=True,
                 useDrugs=False,
                 useSingleAgent=useSingleAgentResponse,
+                useCancerType=useCancerType,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -331,6 +333,7 @@ def buildModel(hp):
                 useCoeffs=False,
                 useDrugs=True,
                 useSingleAgent=useSingleAgentResponse,
+                useCancerType=useCancerType,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -345,6 +348,7 @@ def buildModel(hp):
                 useCoeffs=True,
                 useDrugs=False,
                 useSingleAgent=useSingleAgentResponse,
+                useCancerType=useCancerType,
                 expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
@@ -400,9 +404,9 @@ def buildModel(hp):
     elif(use=='xgboost'):
         model = MultiOutputRegressor (XGBRegressor(
             n_jobs=-1,
-            n_estimators=hp.Int('n_estimators', 100, 1000),
+            n_estimators=hp.Int('n_estimators', 100, 3000),
             learning_rate = hp.Float('learning_rate', 1e-4, 1e-1, sampling="log"),
-            max_depth = hp.Int('max_depth', 3, 9),
+            max_depth = hp.Int('max_depth', 3, 11),
             min_child_weight = hp.Int('min_child_weight', 1, 5),
             gamma = hp.Float('gamma', 0, 2),
             subsample = hp.Float('subsample', 0.6, 1.0)
@@ -523,9 +527,13 @@ X = X.loc[:,~X.columns.str.startswith('drug')]
 X = X.loc[:,~X.columns.str.startswith('Unnamed')]
 X = X.drop(['Tissue','CELLNAME','NSC1','NSC2','Anchor Conc','GROUP','Delta Xmid','Delta Emax','mahalanobis', 'Experiment', 'cancer_type_detail', 'gender', 'ethnicity', 'age_at_sampling'], axis=1)
 
+
+cancerTypeDF = X.loc[:, ['cancerTypeFactorized']]
+
+
 if(not useCellLinePatientData):
     X = X.drop(['genderFactorized', 'ethnicityFactorized', 'ageScaled'], axis=1)
-if(not useCancerType):
+if(not useCancerType or (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN' or modelName=='dlMixed')  ):
     X = X.drop(['cancerTypeFactorized'], axis=1)
 
 
@@ -539,7 +547,7 @@ else:
   
 
 
-if(not useSingleAgentResponse or  (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN' or modelName=='dlMixed')   ):
+if(not useSingleAgentResponse or (modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN' or modelName=='dlMixed')   ):
     if(hasAnchorSingles):
         X = X.drop(['Library IC50','Library Emax', 'Anchor IC50', 'Anchor Emax'], axis=1)
     else:
@@ -651,7 +659,8 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                     BfingerDFTrain, BfingerDFTest = BfingerDF.iloc[train_index,:],BfingerDF.iloc[test_index,:]
                 if(useSingleAgentResponse):
                     singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
-
+                if(useCancerType):
+                    cancerTypeDFTrain,  cancerTypeDFTest = cancerTypeDF.iloc[train_index,:],cancerTypeDF.iloc[test_index,:]
                 XTrain = [omicsDFTrain]
                 XTest = [omicsDFTest]
 
@@ -668,8 +677,13 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 if(useSingleAgentResponse):
                     XTrain.append(singleAgentDFTrain)
                     XTest.append(singleAgentDFTest)
+                if(useCancerType):
+                    XTrain.append(cancerTypeDFTrain)
+                    XTest.append(cancerTypeDFTest)
+
 
             else:
+                print("this is a bad model :(")
                 if(useSingleAgentResponse):
                     singleAgentDFTrain, singleAgentDFTest = singleAgentDF.iloc[train_index,:],singleAgentDF.iloc[test_index,:]
                 omicsDFTrain, omicsDFTest = omicsDF.iloc[train_index,:],omicsDF.iloc[test_index,:]
@@ -939,6 +953,9 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
         shapICList = []
         shapEmaxList = []
 
+        print("Saving shap values. This can take a long while.")
+
+        columnIndex = 0
         for q in range(kFold):
             icName = saveToShapBaseName + str(q) + 'ic.csv'
             emaxName = saveToShapBaseName + str(q) + 'emax.csv'
@@ -947,8 +964,9 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
         
             shapIC = pd.read_csv(shapDirIC, index_col=0)
             shapEmax = pd.read_csv(shapDirEmax, index_col=0)
-            print("SHAP IC50:")
-            print(shapIC)
+            shapIC.columns = range(columnIndex,columnIndex+shapIC.columns.size) #renaming columns is important to save to parquet
+            shapEmax.columns = range(columnIndex,columnIndex+shapEmax.columns.size)
+
             shapICList.append(shapIC)
             shapEmaxList.append(shapEmax)
 
