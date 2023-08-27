@@ -148,3 +148,38 @@ def stackedbarplot(df, saveGraphsFolder, metricName):
         os.mkdir(saveGraphsFolder / 'IC50')
     plt.savefig(saveGraphsFolder / 'IC50' / fileName)
     plt.close()
+
+
+def stackedbarplot(df, saveGraphsFolder, metricName):
+    
+    matplotlib.rc('font', size=25)
+    matplotlib.rc('axes', titlesize=25)
+    plt.xlabel("Model", size=36)
+    plt.title('Model Performance', size=44)
+    plt.ylabel(metricName, size=36)
+
+    barlist = df.set_index('Model').plot(kind='bar', stacked=True)
+    barlist.set(yticks=np.linspace(0, 1, 11))
+    figure = plt.gcf()
+    figure.set_size_inches(32, 18)
+
+    fileName = 'stackedBar' + metricName + '.png'
+    if not os.path.exists(saveGraphsFolder / 'IC50'):
+        os.mkdir(saveGraphsFolder / 'IC50')
+    plt.savefig(saveGraphsFolder / 'IC50' / fileName)
+    plt.close()
+
+
+
+def stackedGroupedbarplot(df, saveGraphsFolder, metricName):
+    
+    colors = plt.cm.Paired.colors
+
+    fig, ax = plt.subplots()
+    (df['Cell CV']+df['Drug CV']+df['Regular CV']).plot(kind='bar', color=[colors[1], colors[0]], rot=0, ax=ax)
+    (df['Drug CV']+df['Regular CV']).plot(kind='bar', color=[colors[3], colors[2]], rot=0, ax=ax)
+    df['Regular CV'].plot(kind='bar', color=[colors[5], colors[4]], rot=0, ax=ax)
+    plt.tight_layout()
+    plt.show()
+
+
