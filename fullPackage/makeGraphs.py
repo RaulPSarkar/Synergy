@@ -3,13 +3,14 @@ from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import r2_score, mean_squared_error
 from pathlib import Path
 import os
-from src.graphFunctions import regressionGraphs, barplot, stackedbarplot, stackedGroupedbarplot
+from src.graphFunctions import regressionGraphs, barplot, stackedbarplot
+
 
 
 ##########################
 ##########################
 
-runStackedGraphs = True #whether to generate stacked graphs
+runStackedGraphs = False #whether to generate stacked graphs
 
 #Regular
 #predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun0.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensemble.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
@@ -28,13 +29,13 @@ runStackedGraphs = True #whether to generate stacked graphs
 
 
 #Misc Results
-#predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions'  /'final'/'lgbm'/'lgbmrun116cellplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions' /'final'/'rf' /'rfrun115regularplusSingleplusCoeffsplusCType.csv']
-#predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs', 'LGBM CancerType', 'LGBM Cell', 'RF CancerType']
-#mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF', 'LGBM', 'LGBM', 'RF']
-#type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs', 'CancerType', 'Cell', 'CancerType']
-#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
-#modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
-#groupedBars = True
+predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' / 'temp' / 'dlNew1JustCoeffs.csv',  Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99regularplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun100regularplusSingleplusCoeffs.csv', Path(__file__).parent / 'predictions' /'temp' /'rf0CoeffsNoSingle.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions'  /'final'/'lgbm'/'lgbmrun116cellplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions' /'final'/'rf' /'rfrun115regularplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions' /'temp' /'dlCoeffs1.csv']
+predictionNames = ['DL', 'LGBM','DL Coeffs', 'LGBM Coeffs', 'LGBM Coeffs+Single', 'RF', 'RF Coeffs+Single', 'RF Coeffs', 'LGBM CancerType', 'LGBM Cell', 'RF CancerType', 'DL Coeffs+Single']
+mainModel = ['DL', 'LGBM', 'DL', 'LGBM', 'LGBM', 'RF', 'RF', 'RF', 'LGBM', 'LGBM', 'RF', 'DL']
+type = ['Drugs', 'Drugs', 'Coeffs', 'Coeffs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single', 'Coeffs', 'CancerType', 'Cell', 'CancerType', 'Coeffs+Single']
+saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'misc'
+modelStatsFolder =  Path(__file__).parent / 'results' / 'misc'
+groupedBars = True
 
 
 
@@ -48,9 +49,6 @@ runStackedGraphs = True #whether to generate stacked graphs
 #groupedBars = True
 
 
-
-
-
 #Drug CV
 #predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1drug.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3drugplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun1drugplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11drugplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99drugplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99drugplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensembleDrug.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
 #predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
@@ -59,56 +57,21 @@ runStackedGraphs = True #whether to generate stacked graphs
 #groupedBars = False
 
 
-
-#Regular Comparison
-predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99Regular.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv',Path(__file__).parent / 'predictions' /'final'/'rf'/ 'rfrun11.csv', Path(__file__).parent / 'predictions' /'final'/'rf' /'rfrun115regularplusSingleplusCoeffsplusCType.csv']
-predictionNames = ['LGBM Drugs', 'LGBM Coeffs+Single', 'RF Drugs', 'RF Coeffs+Single']
-mainModel = [ 'LGBM', 'LGBM', 'RF', 'RF']
-type = ['Drugs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single']
-saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'regularComparison'
-modelStatsFolder =  Path(__file__).parent / 'results' / 'regularComparison'
-groupedBars = True
-
-#Cell CV Comparison
-#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99cellplusDrugs.csv',Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun116cellplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun115cellplusSingleplusCoeffsplusCType.csv']
-#predictionNames = ['LGBM Drugs', 'LGBM Coeffs+Single', 'RF Drugs', 'RF Coeffs+Single']
-#mainModel = [ 'LGBM', 'LGBM', 'RF', 'RF']
-#type = ['Drugs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single']
-#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'cellCVcomparison'
-#modelStatsFolder =  Path(__file__).parent / 'results' / 'cellCVcomparison'
-#groupedBars = True
-
-
-#Drug CV Comparison
-#predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99drugplusDrugs.csv',Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun117drugplusSingleplusCoeffsplusCType.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11drugplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun115drugplusSingleplusCoeffsplusCType.csv']
-#predictionNames = ['LGBM Drugs', 'LGBM Coeffs+Single', 'RF Drugs', 'RF Coeffs+Single']
-#mainModel = [ 'LGBM', 'LGBM', 'RF', 'RF']
-#type = ['Drugs', 'Coeffs+Single', 'Drugs', 'Coeffs+Single']
-#saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'drugCVcomparison'
-#modelStatsFolder =  Path(__file__).parent / 'results' / 'drugCVcomparison'
-#groupedBars = True
-
-
 #Cell CV
 #predictionPaths = [Path(__file__).parent / 'predictions' / 'final' / 'DL' / 'dlrun1cell.csv', Path(__file__).parent / 'predictions' /'final'/'en'/ 'enrun3cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'svr'/ 'svrrun1cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/ 'rf'/ 'rfrun11cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'xgboost'/ 'xgboostrun99cellplusDrugs.csv', Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun99cellplusDrugs.csv', Path(__file__).parent / 'predictions' / 'final' / 'ensemble' /  'ensembleCell.csv', Path(__file__).parent / 'predictions' /'final'/'baseline'/ 'baselinerun0.csv']
 #predictionNames = ['DL', 'EN', 'SVR' ,'RF', 'XGBoost', 'LGBM', 'Ensemble', 'Baseline']
 #saveGraphsFolder =  Path(__file__).parent / 'graphs' / 'cellCV'
 #modelStatsFolder =  Path(__file__).parent / 'results' / 'cellCV'
-#groupedStackedBars = False
+#groupedBars = False
 
 
-#stackedResults = [Path(__file__).parent / 'results' / 'shuffled' / 'results.csv', Path(__file__).parent / 'results' / 'regular'/ 'results.csv']
-#stackedResultNames = ['Shuffled', 'Results']
-#stackedGraphsFolder = Path(__file__).parent / 'graphs' / 'stackedBarPlots' / 'shuffled'
+stackedResults = [Path(__file__).parent / 'results' / 'shuffled' / 'results.csv', Path(__file__).parent / 'results' / 'regular'/ 'results.csv']
+stackedResultNames = ['Shuffled', 'Results']
+stackedGraphsFolder = Path(__file__).parent / 'graphs' / 'stackedBarPlots' / 'shuffled'
 
 #stackedResults = [Path(__file__).parent / 'results' / 'cellCV' / 'results.csv', Path(__file__).parent / 'results' / 'drugCV' / 'results.csv', Path(__file__).parent / 'results' / 'regular'/ 'results.csv']
 #stackedResultNames = ['Cell CV', 'Drug CV', 'Regular CV']
 #stackedGraphsFolder = Path(__file__).parent / 'graphs' / 'stackedBarPlots' / 'CV'
-
-
-stackedResults = [Path(__file__).parent / 'results' / 'cellCVcomparison' / 'results.csv', Path(__file__).parent / 'results' / 'drugCVcomparison' / 'results.csv', Path(__file__).parent / 'results' / 'regularComparison'/ 'results.csv']
-stackedResultNames = ['Cell CV', 'Drug CV', 'Regular CV']
-stackedGraphsFolder = Path(__file__).parent / 'graphs' / 'stackedGroupedBarPlots' / 'CV'
 
 
 ##########################
@@ -161,11 +124,6 @@ if not os.path.exists(stackedGraphsFolder):
     os.mkdir(stackedGraphsFolder)
 
 
-
-fullStatsDF['mainModel'] = mainModel
-fullStatsDF['type'] = type
-
-
 fullStatsDF.to_csv(modelStatsFolder / 'results.csv', index=False)
 print(fullStatsDF)
 
@@ -186,25 +144,17 @@ finalNames =['Model']
 for idk in stackedResultNames:
     finalNames.append(idk)
 
-print(roundedOld)
+
 cumulativeResults = None
 
 if(runStackedGraphs):
     for result in fullStatsDF.columns:
-    #    if(mainModel,type):
-    #        skip
         fullResults = []
         fullResults.append(pd.DataFrame(predictionNames, columns=['Model']) )
-
         
-
         count = 0
         for j in stackedResults:
             res = pd.read_csv(j)
-
-            aaaa = res['mainModel'] 
-            bbbb = res['type'] 
-
             if(count==0):
                 fullResults.append(res[result])
             else:
@@ -214,29 +164,8 @@ if(runStackedGraphs):
 
         shuffledFingerprintTable = pd.concat(fullResults, axis=1)
         shuffledFingerprintTable.columns = finalNames
-        #stackedbarplot(shuffledFingerprintTable, stackedGraphsFolder ,result)
-############ OLD PORTION ended here ##########
-
-        shuffledFingerprintTable['mainModel'] = aaaa
-        shuffledFingerprintTable['type'] = bbbb
-
         print(shuffledFingerprintTable)
-
-        shuffledFingerprintTable = shuffledFingerprintTable.drop(['Model'], axis=1)
-        print(shuffledFingerprintTable)
-
-        shuffledFingerprintTable.set_index(['mainModel', 'type'], inplace=True)
-        shuffledFingerprintTable = shuffledFingerprintTable.reorder_levels(['mainModel', 'type']).sort_index()
-
-        shuffledFingerprintTable = shuffledFingerprintTable.unstack(level=-1) # unstack the 'Context' column
-        print(shuffledFingerprintTable)
-
-
-        #shuffledFingerprintTable['mainModel'] = fullStatsDF['mainModel']
-        #shuffledFingerprintTable['type'] = fullStatsDF['mainModel']
-        #print(shuffledFingerprintTable)
-
-        stackedGroupedbarplot(shuffledFingerprintTable, stackedGraphsFolder ,result)
+        stackedbarplot(shuffledFingerprintTable, stackedGraphsFolder ,result)
 
 
 

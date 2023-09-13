@@ -26,6 +26,7 @@ import argparse
 from sklearn.linear_model import Ridge
 import tensorflow as tf
 from src.buildDLModel import buildDL, cnnOmicsModel
+from keras.backend import set_session
 
 import matplotlib.pyplot as plt
 from sklearn import tree
@@ -639,6 +640,15 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
             break
         #just do a single fold for sensitivity analysis
 
+
+        #memory management for DL models
+        if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN'):
+            config = tf.ConfigProto()
+            config.gpu_options.allow_growth = True
+            sess = tf.Session(config=config)
+            set_session(sess)
+
+
         suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
         y_train , y_test = y.iloc[train_index, :] , y.iloc[test_index, :] #change if just 1 output var y[train_index]
 
@@ -859,6 +869,10 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 #####################################################
                 ######################################################
                 ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
+
+
+            sess.close()
+            tf.reset_default_graph()
 
 
             df = pd.DataFrame(data={'Experiment': suppTest['Experiment'].values,
