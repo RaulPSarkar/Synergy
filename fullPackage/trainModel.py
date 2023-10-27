@@ -1,9 +1,9 @@
-import shap
 import pandas as pd
 import sys
 import numpy as np
 sys.path.append("..")
 
+import tensorflow as tf
 from pathlib import Path
 from sklearn.model_selection import KFold, GroupShuffleSplit
 import os
@@ -24,7 +24,6 @@ from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.linear_model import Ridge
-import tensorflow as tf
 from src.buildDLModel import buildDL, cnnOmicsModel
 from keras.backend import set_session
 
@@ -36,12 +35,12 @@ from sklearn import tree
 ##########################
 
 ###########PARAMETERS
-omicsType = 'ge' #ge (gene expression), crispr, proteomics
-modelName = 'dlCoeffs'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
+omicsType = 'crispr' #ge (gene expression), crispr, proteomics
+modelName = 'rf'  #en, rf, lgbm, svr, xgboost, base, ridge, dl, dlCoeffs, dlFull, dlCNN, dlMixed
 shapAnalysis = False #whether to perform a shap analysis. doesn't support every model, tested only on LGBM
 crossValidationMode = 'regular' #drug, cell, regular
 tunerTrials = 30 #how many trials the tuner will do for hyperparameter optimization
-tunerRun = 114 #increase if you want to start the hyperparameter optimization process anew
+tunerRun = 115 #increase if you want to start the hyperparameter optimization process anew
 kFold = 5 #number of folds to use for cross-validation
 saveTopXHyperparametersPerFold = 3
 useLandmarkForOmics = True #whether to use landmark cancer genes for omics branch
@@ -53,7 +52,7 @@ useSingleAgentResponse = True #adds single agent data
 useCoeffs = True #adds coefficient data to model. irrelevant if using a dl model
 useDrugs = False #adds drug data to model. irrelevant if using a dl model
 useCellLinePatientData = False #cell line patient age, gender and ethnicity
-useCancerType = True #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
+useCancerType = False #cell line cancer type (i.e. Pancreatic Adenocarcinoma)
 sensitivityAnalysisMode = False #whether to run the script for data size sensitivity analysis.
 #doesn't work with DL models
 sensitivitySizeFractions = [0.01, 0.03, 0.06, 0.1, 0.125, 0.15, 0.17, 0.25, 0.3, 0.375, 0.42, 0.5, 0.625, 0.75, 0.85, 0.9, 0.95, 0.98, 1] #trains the model with each of
@@ -81,8 +80,8 @@ landmarkList = Path(__file__).parent / 'datasets/landmarkgenes.txt'
 top3000MutatedList = Path(__file__).parent / 'datasets/top15mutatedgenes.tsv'
 cancerDriverGenes = Path(__file__).parent / 'datasets/cancerDriverGenes.csv'
 outputPredictions = Path(__file__).parent / 'predictions'
-tunerDirectory = Path(__file__).parent / 'tuner'
-#tunerDirectory = Path('W:\Media') / 'tuner'
+#tunerDirectory = Path(__file__).parent / 'tuner'
+tunerDirectory = Path('W:\Media') / 'tuner'
 coeffs = Path(__file__).parent / 'datasets/coefsProcessed.csv'
 coeffsWithThresholds = Path(__file__).parent / 'datasets/coefsProcessedWithThreshold.csv'
 
@@ -95,6 +94,9 @@ coeffsWithThresholds = Path(__file__).parent / 'datasets/coefsProcessedWithThres
 if(useThresholdsForCoefficients):
     coeffs = coeffsWithThresholds
 
+
+if(shapAnalysis):
+    import shap
 
 
 
@@ -280,54 +282,14 @@ def buildModel(hp):
                 useDrugs=True,
                 useSingleAgent=useSingleAgentResponse,
                 useCancerType=useCancerType,
-                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[256]','[256,256]','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
                 l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
                 hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
                 learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
-    
-
-    elif(use=='dlCNN'):
-        model = cnnOmicsModel(predictorHlayersSizes=hp.Choice('predictorHlayersSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                              hiddenActivation=hp.Choice('hiddenActivation',['relu','prelu', 'leakyrelu']),
-                              cnnActivation=hp.Choice('cnnActivation',['relu','prelu', 'leakyrelu']),
-                              sizeOmics = sizeOmics,
-                              useDrugs = useDrugs,
-                              useCoeffs=useCoeffs,
-                              coeffsDim = sizeCoeffs,
-                              drugDim = sizePrints,
-                              omicsOutputNeurons=hp.Choice('omicsOutputNeurons', [16,32,48,64,128]),
-                              drugHlayerSizes=hp.Choice('drugHlayerSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                              coeffsHlayerSizes=hp.Choice('coeffsHlayerSizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                              hiddenDropout=hp.Choice('hiddenDropout', [0.1, 0.2,0.3,0.4,0.5]),
-                              filters=hp.Choice('filters', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
-                              secondFilter=hp.Choice('secondFilter', [40, 50, 60, 70, 80, 90, 100, 120, 140, 160]),
-                              kernelSize=hp.Choice('kernelSize', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20]),
-                              secondKernel=hp.Choice('secondKernel', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20]),
-                              l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
-                              useSingleAgent = useSingleAgentResponse,
-                              learnRate = hp.Choice('learnRate', [0.01, 0.001, 0.0001, 1e-05]))
-    elif(use=='dlMixed'):
-        model = buildDL(expr_dim = sizeOmics, 
-                drug_dim = sizePrints,
-                coeffs_dim= sizeCoeffs,
-                useCoeffs=True,
-                useDrugs=False,
-                useSingleAgent=useSingleAgentResponse,
-                useCancerType=useCancerType,
-                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
-                l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
-                hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
-                learn_rate=hp.Choice('learn_rate', [0.01, 0.001, 0.0001, 1e-05]))
-
-
     elif(use=='dl'):
         model = buildDL(expr_dim = sizeOmics, 
                 drug_dim = sizePrints,
@@ -335,9 +297,9 @@ def buildModel(hp):
                 useDrugs=True,
                 useSingleAgent=useSingleAgentResponse,
                 useCancerType=useCancerType,
-                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                drug_hlayers_sizes=hp.Choice('drug_hlayers_sizes',['[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[256]','[256,256]','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
                 l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
                 hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
@@ -350,9 +312,9 @@ def buildModel(hp):
                 useDrugs=False,
                 useSingleAgent=useSingleAgentResponse,
                 useCancerType=useCancerType,
-                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
-                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[32]','[64,32]','[64]','[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                expr_hlayers_sizes=hp.Choice('expr_hlayers_sizes',['[64, 64]','[64, 64, 64]','[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                coeffs_hlayers_sizes=hp.Choice('coeffs_hlayers_sizes',['[256]','[256,256]','[128]','[128, 64]','[128, 64,32] ','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
+                predictor_hlayers_sizes=hp.Choice('predictor_hlayers_sizes',['[256]','[256,256]','[128, 128, 128]','[256, 128]','[256, 128, 64]','[512]','[1024, 512]','[1024, 512, 256]','[2048, 1024]']),
                 hidden_activation=hp.Choice('hidden_activation',['relu','prelu', 'leakyrelu']),
                 l2=hp.Choice('l2',[0.01, 0.001, 0.0001, 1e-05]), 
                 hidden_dropout=hp.Choice('hidden_dropout', [0.1, 0.2,0.3,0.4,0.5]),
@@ -368,7 +330,6 @@ def buildModel(hp):
             min_samples_split=hp.Int('min_samples_split', 2, 5),
             min_samples_leaf=hp.Int('min_samples_leaf', 1, 5),
             bootstrap=hp.Boolean('bootstrap', True, False),
-            #criterion=hp.Choice('criterion', ['gini','entropy']),
             n_jobs=-1
         )
 
@@ -618,7 +579,7 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
     shapValueList = []
     shapValueListEmax = []
 
-        #cross validation
+    #validation method
     if(crossValidationMode=='drug'):
         gs = GroupShuffleSplit(n_splits=kFold)
         splits = gs.split(X, y, groupDrugs)
@@ -640,13 +601,6 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
             break
         #just do a single fold for sensitivity analysis
 
-
-        #memory management for DL models
-        if(modelName=='dl' or modelName=='dlCoeffs' or modelName=='dlFull' or modelName=='dlCNN'):
-            config = tf.ConfigProto()
-            config.gpu_options.allow_growth = True
-            sess = tf.Session(config=config)
-            set_session(sess)
 
 
         suppTrain, suppTest = supp.iloc[train_index,:],supp.iloc[test_index,:]
@@ -690,7 +644,7 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 if(useCancerType):
                     XTrain.append(cancerTypeDFTrain)
                     XTest.append(cancerTypeDFTest)
-
+                
 
             else:
                 print("this is a bad model :(")
@@ -855,7 +809,7 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 ######################################################
                 ######################################################
                 bestHP = tuner.get_best_hyperparameters(1)[0]
-
+                print(XTrain)
                 # Build the model with the optimal hyperparameters and train it on the data for 65 epochs
                 model = tuner.hypermodel.build(bestHP)
                 history = model.fit(XTrain, y_train, epochs=65, validation_split=0.2)
@@ -869,10 +823,6 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
                 #####################################################
                 ######################################################
                 ypred = np.squeeze(hypermodel.predict(XTest, batch_size=64))
-
-
-            sess.close()
-            tf.reset_default_graph()
 
 
             df = pd.DataFrame(data={'Experiment': suppTest['Experiment'].values,
@@ -914,6 +864,12 @@ def trainTestModel(sens=False, sensRun=0, sensIter = 0):
 
         saveTo = modelName + str(index) + '.csv'
         df.to_csv(outputPredictions / 'temp' / saveTo, index=False)
+
+        ########REMOVEEEEE
+        finalName = modelName + runString + crossValidationMode + omicsType + str(index) + '.csv' #remove later
+        df.to_csv(outputPredictions / 'temp' / finalName, index=False) #remove later
+        #################
+
         index+=1
         fullPredictions.append(df)
 

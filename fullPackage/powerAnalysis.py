@@ -19,6 +19,9 @@ totalIterations = 3 #number of iterations on which power analysis was done
 resultsFolder =  Path(__file__).parent / 'results' / 'sens'
 graphsFolder =  Path(__file__).parent / 'graphs' / 'sens'
 
+barplotXSize = 32 #x and y sizes to render the graphs on (smaller x makes bars thinner)
+barplotYSize = 25
+
 
 
 
@@ -39,6 +42,7 @@ fullStatsDF = []
 for i in range(totalIterations):
 
 
+    
     for j in range( len(sensitivitySizeFractions) ):
 
 
@@ -89,27 +93,36 @@ print(fullStatsDF)
 
 
 
-for metricName in ['Pearson IC50', 'Spearman IC50', 'R2 IC50', 'Spearman Emax', 'R2 Emax', 'MSE Emax']:
+for metricName in ['Pearson IC50', 'Spearman IC50', 'R2 IC50', 'Pearson Emax', 'Spearman Emax', 'R2 Emax']:
     
-
+    sns.set_style('whitegrid')
     matplotlib.rc('font', size=35)
     matplotlib.rc('axes', titlesize=35)
+    fig, ax = plt.subplots()
     sns.set_style('whitegrid')
-    plot=sns.lineplot(data=fullStatsDF, x="name", y="Pearson IC50", linewidth=5)
+    plot=sns.lineplot(data=fullStatsDF, x="name", y=metricName, linewidth=5)
     
     figure = plt.gcf()
-    figure.set_size_inches(32, 18)
+    figure.set_size_inches(barplotXSize, barplotYSize)
     matplotlib.rc('font', size=35)
     matplotlib.rc('axes', titlesize=35)
-    plt.xlabel("Fraction of Dataset used to Train/Test Model", size=36)
-    plt.title('Performance of LGBM trained with Coefficient Data by Dataset Size', size=44)
-    plt.ylabel(metricName, size=36)
+    plt.xlabel("Fraction of Dataset used to Train/Test Model", size=46, labelpad=25)
+    plt.title('Performance of Drug-Gene Coefficient LGBM by Dataset Size', size=54, pad=15)
+    plt.ylabel(metricName, size=46)
     plot.ticklabel_format(style='plain')
     plot.set(xscale='log')
-    plot.set(xticks=sensitivitySizeFractions)
-    plot.set(xticklabels=sensitivitySizeFractions)
+    plot.set(xticks=sensitivitySizeFractions[2:])
+
+    xLabels = sensitivitySizeFractions[2:]
+    xLabels[15] = ''
+    xLabels[14] = ''
+    xLabels[13] = ''
+
+    plot.set(xticklabels=xLabels)
+
     plot.set(yticks=np.linspace(0, 1, 11))
     plt.setp(plot.get_xminorticklabels(), visible=False)
+    plt.setp(ax.get_xticklabels(), rotation=90, horizontalalignment='right', fontsize=35)
 
     fileName = 'sizeSensAnalysis' + metricName + '.png'
     plt.savefig(graphsFolder / fileName)

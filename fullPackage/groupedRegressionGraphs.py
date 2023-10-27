@@ -15,9 +15,11 @@ import os
 #Change
 groupingType = 'pair' #lib (library drug only), pair (drug pairs)
 predictionPaths = [Path(__file__).parent / 'predictions' /'final'/'lgbm'/ 'lgbmrun115regularplusSingleplusCoeffsplusCType.csv']
-predictionNames = ['LGBM']
+predictionNames = ['R2']
 graphsFolder =  Path(__file__).parent / 'graphs' / 'groupedRegression'
-topXGraphs = 3 #How many top x best/worst library drug graphs to generate
+resultsFolder =  Path(__file__).parent / 'results' / 'drugPairCorrelations'
+
+topXGraphs = 10 #How many top x best/worst library drug graphs to generate
 ##########################
 ##########################
 
@@ -26,6 +28,9 @@ if not os.path.exists(graphsFolder/ 'IC50'):
     os.mkdir(graphsFolder / 'IC50')
 if not os.path.exists(graphsFolder/ 'Emax'):
     os.mkdir(graphsFolder / 'Emax')
+if not os.path.exists(resultsFolder):
+    os.mkdir(resultsFolder)
+
 
 
 #adapted from https://stackoverflow.com/questions/49895000/regression-by-group-in-python-pandas
@@ -33,7 +38,7 @@ def regress(data, yvar, xvars):
     Y = data[yvar]
     X = data[xvars]
     X['intercept'] = 1.
-    result = sm.OLS(Y, X).fit()    
+    result = sm.OLS(Y, X).fit()
     outputA = result.rsquared
 
     return result.rsquared
@@ -65,6 +70,8 @@ for j in predictionPaths:
     whiskerData.append(x)
     
     topLibrary = x.sort_values( ascending=False)
+    outputFile = resultsFolder / 'drugPairsR2-IC50.csv'
+    topLibrary.to_csv(outputFile)
     print(topLibrary)
     print(topLibrary.index)
     print(topLibrary.index[0])
@@ -73,20 +80,22 @@ for j in predictionPaths:
     xEmax = pd.DataFrame()
 
     if(groupingType=='lib'):
-        xEmax = df.groupby('Library').apply(regress, 'y_predIC', ['y_trueIC'])
+        xEmax = df.groupby('Library').apply(regress, 'y_predEmax', ['y_trueEmax'])
     elif(groupingType=='pair'):
-        xEmax = df.groupby(['Library', 'Anchor']).apply(regress, 'y_predIC', ['y_trueIC'])
+        xEmax = df.groupby(['Library', 'Anchor']).apply(regress, 'y_predEmax', ['y_trueEmax'])
 
     xEmax.name = modelName
     whiskerDataEmax.append(xEmax)
     
     topLibraryEmax = xEmax.sort_values( ascending=False)
+    outputFile = resultsFolder / 'drugPairsR2-Emax.csv'
+    topLibraryEmax.to_csv(outputFile)
 
 
 
     for pos in ['best','worst']:
 
-        for i in range(3):
+        for i in range(topXGraphs):
 
             index = i
             if(pos=='worst'):

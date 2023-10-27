@@ -4,8 +4,6 @@ keras_tuner
 lightgbm
 matplotlib
 numpy
-numpy
-numpy
 pandas
 PubChemPy
 PyYAML
@@ -15,3 +13,4 @@ scipy
 seaborn
 statsmodels
 tensorflow
+shap

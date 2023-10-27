@@ -78,6 +78,14 @@ def buildDL(useCancerType=False, expr_dim=None, drug_dim=None, coeffs_dim=None, 
 
 		coeffsA = coeffs_submodel(coeffs1_input)
 		coeffsB = coeffs_submodel(coeffs2_input)
+		
+		#coeffsA = dense_submodel(coeffs1_input, hlayers_sizes=coeffs_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
+	    #                  hidden_activation=hidden_activation, input_dropout=input_dropout,
+	    #                  hidden_dropout=hidden_dropout)
+		#coeffsB = dense_submodel(coeffs2_input, hlayers_sizes=coeffs_hlayers_sizes, l1_regularization=l1, l2_regularization=l2,
+	    #                  hidden_activation=hidden_activation, input_dropout=input_dropout,
+	    #                  hidden_dropout=hidden_dropout)
+
 
 	fullConcat = [expr]
 	if(useCoeffs):

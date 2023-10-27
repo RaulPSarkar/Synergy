@@ -3,7 +3,7 @@ import cirpy
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from chemspipy import ChemSpider
+#from chemspipy import ChemSpider
 from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -15,7 +15,7 @@ def drugToSMILES(drugName, cached=False, cachedFile="drug2smiles.txt"):
     
 
     if(not cached):
-        cs = ChemSpider('ek03ZPZ3ITspWqMEWurgAQa4crlGhAJf')
+        #cs = ChemSpider('') #requires key from chemspider
         drugSmile =cirpy.resolve(drugName, 'smiles')
         try:
             
@@ -35,14 +35,14 @@ def drugToSMILES(drugName, cached=False, cachedFile="drug2smiles.txt"):
                 if(results):
                     return results[0].isomeric_smiles
                 else:
-                    
-                    c2 = cs.search(drugName)
+                    pass
+                    #c2 = cs.search(drugName)
 
 
-                    if(c2):
-                        return c2[0].smiles
-                    else:
-                        return -1
+                    #if(c2):
+                    #    return c2[0].smiles
+                    #else:
+                    #    return -1
     else:
         drug2smile = pd.read_csv(cachedFile, sep='\t')
         try:

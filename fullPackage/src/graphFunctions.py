@@ -7,65 +7,59 @@ import os
 import numpy as np
 
 
-def barplot(df, saveFolder, type='gdsc', resultName = 'name', groupedBars=False):
+def barplot(df, saveFolder, type='gdsc', resultName = 'name', groupedBars=False, barplotXSize = 32, barplotYSize = 18, drawBarPlotValues=False, groupedBarplotLegendLocation='lower center', tiltAngle=0, title= 'Performance for each model', titleOffset=6):
 
-    matplotlib.rc('font', size=30)
-    matplotlib.rc('axes', titlesize=30)
+    matplotlib.rc('font', size=25)
+    matplotlib.rc('axes', titlesize=25)
+
+    
+    fig, ax = plt.subplots()
+
+    if(groupedBars):
+        splot=sns.barplot(x='mainModel', hue='type', y=resultName,data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
+        splot.legend(loc=groupedBarplotLegendLocation)
+
+    else:
+        ax1 = plt.subplot(1, 2, 1)
+        splot=sns.barplot(x='name',y=resultName,data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
+
+    #pearson/spearman/r2 graphs go from 0 to 1, but not mse
+    if( ('Pearson' in resultName) or ('Spearman' in resultName) or ('R2' in resultName)):
+        splot.set(yticks=np.linspace(0, 1, 11))
+
+    correctedResultName = resultName.replace('IC50', '$ΔIC_{50}$')
+    correctedResultName = correctedResultName.replace('Emax', '$ΔE_{max}$')
+    correctedResultName = correctedResultName.replace('R2', '$R^2$')
 
     if(type=='almanac'):
-        splot=sns.barplot(x='model',y='r2_score',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])
-        plt.xlabel("Model Used", size=36)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=36,label_type='center')
-        plt.ylabel("Comboscores R\u00b2", size=36)
-        plt.show()
-        splot=sns.barplot(x='model',y='spearman',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])
-        plt.xlabel("Model Used", size=36)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=36,label_type='center')
-        plt.ylabel("Comboscores Spearman's rho", size=36)
-        plt.show()
-        splot=sns.barplot(x='model',y='mean_squared_error',data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        plt.xlabel("Model Used", size=36)
-        plt.title('Performance for each model', size=34)
-        plt.bar_label(splot.containers[0], size=36,label_type='center')
-        plt.ylabel("Comboscores MSE", size=36)
-        plt.show()
+        correctedResultName = correctedResultName + ' COMBOSCOREs'
 
-    elif(type=='gdsc'):
-
-        if(groupedBars):
-            splot=sns.barplot(x='mainModel', hue='type', y=resultName,data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        else:
-            ax1 = plt.subplot(1, 2, 1)
-            splot=sns.barplot(x='name',y=resultName,data=df, palette=['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])#, order=df['Model'])
-        
-        #pearson/spearman/r2 graphs go from 0 to 1, but not mse
-        if( ('Pearson' in resultName) or ('Spearman' in resultName) or ('R2' in resultName)):
-            splot.set(yticks=np.linspace(0, 1, 11))
-
-        plt.xlabel("Model Used", size=36)
-        plt.title('Performance for each model', size=54)
-        plt.ylabel(resultName, size=36)
-        if(not groupedBars):
-            plt.bar_label(splot.containers[0], size=36,label_type='center')
-            patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
-            ax1.axes.get_xaxis().set_visible(False)
-            ax2 = plt.subplot(122)
-            ax2.set_axis_off()
-            ax2.legend(handles=patches, loc='center left')    
-        else:
+    plt.xlabel("Model Used", size=30)
+    plt.title(title, size=40, pad=titleOffset)
+    plt.ylabel(correctedResultName, size=30)
+    if(not groupedBars):
+        #plt.bar_label(splot.containers[0], size=30,label_type='center')
+        patches = [matplotlib.patches.Patch(color=sns.color_palette(['#d684bd', '#3274a1', '#c03d3e', '#3a923a', '#e1812c', '#9372b2', '#7f7f7f', '#2e8e72', '#96ae81'])[i], label=t) for i,t in enumerate(t.get_text() for t in splot.get_xticklabels())]
+        ax1.axes.get_xaxis().set_visible(False)
+        ax2 = plt.subplot(122)
+        ax2.set_axis_off()
+        ax2.legend(handles=patches, loc='center left')    
+    else:
+        if(drawBarPlotValues):
             for i in splot.containers:
-                splot.bar_label(i,)
+                    splot.bar_label(i,)
 
-        #to save in fullscreen
-        figure = plt.gcf()
-        figure.set_size_inches(32, 18)
-        fileName = resultName + 'barplot.png'
-        if not os.path.exists(saveFolder / 'barPlots'):
-            os.mkdir(saveFolder / 'barPlots')
-        plt.savefig(saveFolder / 'barPlots' / fileName)
-        plt.close()
+        plt.setp(ax.get_xticklabels(), rotation=tiltAngle, horizontalalignment='right')
+        
+
+    #to save in fullscreen
+    figure = plt.gcf()
+    figure.set_size_inches(barplotXSize, barplotYSize)
+    fileName = resultName + 'barplot.png'
+    if not os.path.exists(saveFolder / 'barPlots'):
+        os.mkdir(saveFolder / 'barPlots')
+    plt.savefig(saveFolder / 'barPlots' / fileName)
+    plt.close()
 
 
 def regressionGraphs(df, modelName, dfStats, saveGraphsFolder):
@@ -136,26 +130,10 @@ def stackedbarplot(df, saveGraphsFolder, metricName):
     matplotlib.rc('axes', titlesize=25)
     plt.xlabel("Model", size=36)
     plt.title('Model Performance', size=44)
-    plt.ylabel(metricName, size=36)
+    correctedResultName = metricName.replace('IC50', '$ΔIC_{50}$')
+    correctedResultName = correctedResultName.replace('Emax', '$ΔE_{max}$')
+    correctedResultName = correctedResultName.replace('R2', '$R^2$')
 
-    barlist = df.set_index('Model').plot(kind='bar', stacked=True)
-    barlist.set(yticks=np.linspace(0, 1, 11))
-    figure = plt.gcf()
-    figure.set_size_inches(32, 18)
-
-    fileName = 'stackedBar' + metricName + '.png'
-    if not os.path.exists(saveGraphsFolder / 'IC50'):
-        os.mkdir(saveGraphsFolder / 'IC50')
-    plt.savefig(saveGraphsFolder / 'IC50' / fileName)
-    plt.close()
-
-
-def stackedbarplot(df, saveGraphsFolder, metricName):
-    
-    matplotlib.rc('font', size=25)
-    matplotlib.rc('axes', titlesize=25)
-    plt.xlabel("Model", size=36)
-    plt.title('Model Performance', size=44)
     plt.ylabel(metricName, size=36)
 
     barlist = df.set_index('Model').plot(kind='bar', stacked=True)
@@ -171,15 +149,39 @@ def stackedbarplot(df, saveGraphsFolder, metricName):
 
 
 
-def stackedGroupedbarplot(df, saveGraphsFolder, metricName):
+def stackedGroupedbarplot(df, saveGraphsFolder, metricName, barplotXSize = 16, barplotYSize = 18, groupedBarplotLegendLocation='lower center'):
     
     colors = plt.cm.Paired.colors
+    matplotlib.rc('font', size=22)
+    matplotlib.rc('axes', titlesize=22)
 
     fig, ax = plt.subplots()
-    (df['Cell CV']+df['Drug CV']+df['Regular CV']).plot(kind='bar', color=[colors[1], colors[0]], rot=0, ax=ax)
-    (df['Drug CV']+df['Regular CV']).plot(kind='bar', color=[colors[3], colors[2]], rot=0, ax=ax)
-    df['Regular CV'].plot(kind='bar', color=[colors[5], colors[4]], rot=0, ax=ax)
-    plt.tight_layout()
-    plt.show()
+    (df['Regular CV']+df['Drug CV']+df['Cell CV']).plot(kind='bar', color=[colors[1], colors[0]], rot=0, ax=ax)
+    (df['Drug CV']+df['Cell CV']).plot(kind='bar', color=[colors[3], colors[2]], rot=0, ax=ax)
+    df['Cell CV'].plot(kind='bar', color=[colors[5], colors[4]], rot=0, ax=ax)
+    figure = plt.gcf()
+    figure.set_size_inches(barplotXSize, barplotYSize)
+    
+    plt.legend(loc=groupedBarplotLegendLocation, ncol=1, fontsize=24, labels=['CV (Coeffs+Single Agent+CType)', 'CV (Fingerprints)', 'Drug Pair CV (Coeffs+Single Agent+CType)', 'Drug Pair CV (Fingerprints)', 'Cell CV (Coeffs+Single Agent+CType)', 'Cell CV (Fingerprints)'])
+    
+    #plt.legend(['line1', 'line2', 'line3'], ['label1', 'label2', 'label3'])
+    #ax.legend(labels=mylabels)
+
+    #pearson/spearman/r2 graphs go from 0 to 1, but not mse
+    if( ('Pearson' in metricName) or ('Spearman' in metricName) or ('R2' in metricName)):
+        plt.yticks(np.linspace(0, 1, 11))
+
+    correctedResultName = metricName.replace('IC50', '$ΔIC_{50}$')
+    correctedResultName = correctedResultName.replace('Emax', '$ΔE_{max}$')
+    correctedResultName = correctedResultName.replace('R2', '$R^2$')
+
+    plt.ylabel(correctedResultName, size=26)
+    plt.title('Performance of each CV Stratification Method', size=28)
+    plt.xlabel("Model Name", size=26)
+
+    #plt.tight_layout()
+    #plt.show()
+    plt.savefig(saveGraphsFolder / metricName)
+    plt.close()
 
 
